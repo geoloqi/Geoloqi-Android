@@ -16,6 +16,9 @@ public class GeoloqiService extends Service implements LocationListener {
 	private static final String TAG = "GeoloqiService";
 	MediaPlayer player;
 	LocationManager locationManager;
+	LQLocationData db;
+	int distanceFilter = 5;
+	float trackingLimit = 10.0f;
 	
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -31,6 +34,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		player.setLooping(false); // Set looping
 		
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+		db = new LQLocationData(this);
 	}
 
 	@Override
@@ -38,6 +42,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");
 		player.stop();
+		Log.d(TAG, "Points: " + db.numberOfUnsentPoints());
 	}
 	
 	@Override
@@ -47,7 +52,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		player.start();
 		
 		String bestProvider = locationManager.getBestProvider(new Criteria(), true);
-		locationManager.requestLocationUpdates(bestProvider, 5, 10.0f, this);
+		locationManager.requestLocationUpdates(bestProvider, distanceFilter, trackingLimit, this);
 		
 		Log.d(TAG, "Provider: " + bestProvider);
 	}
@@ -55,11 +60,11 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub
 		Log.d(TAG, location.toString());
+		db.addLocation(location, distanceFilter, (int)trackingLimit, 0);
 	}
 
 	public void onProviderDisabled(String provider) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	public void onProviderEnabled(String provider) {
