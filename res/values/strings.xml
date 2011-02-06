@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, Geoloqi!</string>
     <string name="app_name">Geoloqi</string>
+    <string name="sending">Sending points to the server!</string>
 </resources>

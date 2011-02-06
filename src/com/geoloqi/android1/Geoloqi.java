@@ -76,6 +76,8 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 			latLabel.setText(""+latitude);
 			lngLabel.setText(""+longitude);
+			
+			cursor.close();
 		}		
 	}
 
