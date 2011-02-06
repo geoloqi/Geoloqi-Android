@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Geoloqi</string>
+    <string name="quit">Exit</string>
     <string name="sending">Sending points to the server!</string>
 </resources>

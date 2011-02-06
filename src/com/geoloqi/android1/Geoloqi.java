@@ -10,6 +10,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -41,6 +44,29 @@ public class Geoloqi extends Activity implements OnClickListener {
 		new Timer().schedule(new MyTimerTask(), 0, 1000);
 	}
 
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		Log.d(TAG, "Inflating menu!");
+	    MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.main_menu, menu);
+	    return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    // Handle item selection
+	    switch (item.getItemId()) {
+	    case R.id.settings:
+	    	
+	        return true;
+	    case R.id.quit:
+	        // exit();
+	        return true;
+	    default:
+	        return super.onOptionsItemSelected(item);
+	    }
+	}
+
 	public void onClick(View src) {
 		switch (src.getId()) {
 		case R.id.buttonStart:
@@ -61,6 +87,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	class LQUpdateUI extends AsyncTask<Void, Void, Cursor> {
 
 		// Doesn't have access to the UI thread
+		@Override
 		protected Cursor doInBackground(Void... v) {
 			return db.getLastLocation();
 		}
@@ -70,6 +97,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		}
 
 		// Runs with the return value of doInBackground, has access to the UI thread
+		@Override
 		protected void onPostExecute(Cursor cursor) {
 			double latitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LATITUDE));
 			double longitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LONGITUDE));
@@ -88,6 +116,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 			}
 		};
 
+		@Override
 		public void run() {
 			handler.post(runnable);
 		}

@@ -3,12 +3,8 @@ package com.geoloqi.android1;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.geoloqi.android1.Geoloqi.LQUpdateUI;
-import com.geoloqi.android1.Geoloqi.MyTimerTask;
-
 import android.app.Service;
 import android.content.Intent;
-import android.database.Cursor;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -94,6 +90,7 @@ public class GeoloqiService extends Service implements LocationListener {
 	class LQFlushQueue extends AsyncTask<Void, Void, Void> {
 
 		// Doesn't have access to the UI thread
+		@Override
 		protected Void doInBackground(Void... v) {
 			Log.d(TAG, "Flushing queue...");
 			
@@ -105,6 +102,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		}
 
 		// Runs with the return value of doInBackground
+		@Override
 		protected void onPostExecute(Void v) {
 			Log.d(TAG, "Flush queue completed");
 			
@@ -118,6 +116,7 @@ public class GeoloqiService extends Service implements LocationListener {
 			}
 		};
 
+		@Override
 		public void run() {
 			handler.post(runnable);
 		}
