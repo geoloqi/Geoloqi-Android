@@ -12,6 +12,21 @@ public class LQLocationData extends SQLiteOpenHelper {
 
 	private static final String DATABASE_NAME = "geoloqi.db";
 	private static final int DATABASE_VERSION = 2;
+	
+	public static final String ID = "id";
+	public static final String SENT = "sent";
+	public static final String DATE = "date";
+	public static final String LATITUDE = "latitude";
+	public static final String LONGITUDE = "longitude";
+	public static final String ALTITUDE = "altitude";
+	public static final String SPEED = "speed";
+	public static final String HEADING = "heading";
+	public static final String HORIZONTAL_ACCURACY = "horizontal_accuracy";
+	public static final String SOURCE = "source";
+	public static final String DISTANCE_FILTER = "distance_filter";
+	public static final String TRACKING_LIMIT = "tracking_limit";
+	public static final String RATE_LIMIT = "rate_limit";
+	public static final String BATTERY = "battery";
 
 	public LQLocationData(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -20,20 +35,20 @@ public class LQLocationData extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL("CREATE TABLE lqLocationData (" +
-				"id INTEGER PRIMARY KEY AUTOINCREMENT," +
-				"sent INTEGER DEFAULT 0," +
-				"date INTEGER," +
-				"latitude REAL," +
-				"longitude REAL," +
-				"altitude INTEGER," +
-				"speed INTEGER," +
-				"heading INTEGER," +
-				"horizontal_accuracy INTEGER," +
-				"source TEXT," +
-				"distance_filter INTEGER," +
-				"tracking_limit INTEGER," +
-				"rate_limit INTEGER," +
-				"battery INTEGER);");
+				ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+				SENT + " INTEGER DEFAULT 0," +
+				DATE + " INTEGER," +
+				LATITUDE + " REAL," +
+				LONGITUDE + " REAL," +
+				ALTITUDE + " INTEGER," +
+				SPEED + " INTEGER," +
+				HEADING + " INTEGER," +
+				HORIZONTAL_ACCURACY + " INTEGER," +
+				SOURCE + " TEXT," +
+				DISTANCE_FILTER + " INTEGER," +
+				TRACKING_LIMIT + " INTEGER," +
+				RATE_LIMIT + " INTEGER," +
+				BATTERY + " INTEGER);");
 	}
 
 	@Override
@@ -46,17 +61,17 @@ public class LQLocationData extends SQLiteOpenHelper {
 	public void addLocation(Location location, int distanceFilter, int trackingLimit, int rateLimit) {
 		SQLiteDatabase db = this.getWritableDatabase();
 		ContentValues values = new ContentValues();
-		values.put("date", (int)(System.currentTimeMillis() / 1000));
-		values.put("latitude", location.getLatitude());
-		values.put("longitude", location.getLongitude());
-		values.put("altitude", (int)location.getAltitude());
-		values.put("heading", (int)location.getBearing());
-		values.put("horizontal_accuracy", location.getAccuracy());
-		values.put("source", location.getProvider());
-		values.put("distance_filter", distanceFilter);
-		values.put("tracking_limit", trackingLimit);
-		values.put("rate_limit", rateLimit);
-		values.put("battery",0);
+		values.put(DATE, (int)(System.currentTimeMillis() / 1000));
+		values.put(LATITUDE, location.getLatitude());
+		values.put(LONGITUDE, location.getLongitude());
+		values.put(ALTITUDE, (int)location.getAltitude());
+		values.put(HEADING, (int)location.getBearing());
+		values.put(HORIZONTAL_ACCURACY, location.getAccuracy());
+		values.put(SOURCE, location.getProvider());
+		values.put(DISTANCE_FILTER, distanceFilter);
+		values.put(TRACKING_LIMIT, trackingLimit);
+		values.put(RATE_LIMIT, rateLimit);
+		values.put(BATTERY,0);
 		db.insertOrThrow("lqLocationData", null, values);
 	}
 	
@@ -67,5 +82,14 @@ public class LQLocationData extends SQLiteOpenHelper {
 			return cursor.getInt(0);
 		}
 		return 0;
+	}
+	
+	public Cursor getLastLocation() {
+		SQLiteDatabase db = this.getReadableDatabase();
+		Cursor cursor = db.rawQuery("SELECT * FROM lqLocationData ORDER BY date DESC LIMIT 1", null);
+		while(cursor.moveToNext()) {
+			return cursor;
+		}
+		return null;
 	}
 }

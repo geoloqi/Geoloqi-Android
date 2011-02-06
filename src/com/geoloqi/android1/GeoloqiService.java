@@ -58,7 +58,6 @@ public class GeoloqiService extends Service implements LocationListener {
 	}
 
 	public void onLocationChanged(Location location) {
-		// TODO Auto-generated method stub
 		Log.d(TAG, location.toString());
 		db.addLocation(location, distanceFilter, (int)trackingLimit, 0);
 	}

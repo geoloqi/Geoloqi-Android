@@ -4,9 +4,17 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:gravity="center">
+
+<TextView android:layout_width="wrap_content" android:text="@+id/textLatitude" android:layout_height="wrap_content" android:id="@+id/textLatitude"></TextView>
+<TextView android:layout_width="wrap_content" android:text="@+id/textLongitude" android:layout_height="wrap_content" android:id="@+id/textLongitude"></TextView>
+
 <TextView  
     android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" android:text="Services Demo" android:gravity="center" android:textSize="20sp" android:padding="20dp"/>
+    android:layout_height="wrap_content" android:text="Services Demo" android:gravity="center" android:textSize="20sp" android:padding="20dp" />
 <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/buttonStart" android:text="Start"></Button>
 <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stop" android:id="@+id/buttonStop"></Button>
+
+<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Update" android:id="@+id/buttonUpdate"></Button>
+
+
 </LinearLayout>
