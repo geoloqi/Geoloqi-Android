@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+  xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<PreferenceCategory android:title="@string/tracking_settings">
+
+	<ListPreference
+               android:key="rate_limit"
+               android:title="@string/rate_limit_preference"
+               android:summary="@string/summary_rate_limit_preference"
+               android:entries="@array/entries_rate_limit_preference"
+               android:entryValues="@array/entryvalues_rate_limit_preference"
+               android:dialogTitle="@string/rate_limit_preference" 
+               android:defaultValue="300" />
+
+	</PreferenceCategory>
+</PreferenceScreen>

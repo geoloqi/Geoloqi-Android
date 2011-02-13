@@ -11,6 +11,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".GeoloqiPreferences"
+                  android:label="@string/preferences">
+        </activity>
 		<service android:enabled="true" android:name=".GeoloqiService" android:process=":lqRemote" />
     </application>
     <uses-sdk android:minSdkVersion="7" />

@@ -19,7 +19,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 public class Geoloqi extends Activity implements OnClickListener {
-	private static final String TAG = "GeoloqiServiceDemo";
+	public static final String TAG = "GeoloqiServiceDemo";
 	private Button buttonStart, buttonStop, buttonUpdate;
 	private TextView latLabel, lngLabel;
 	protected LQLocationData db;
@@ -57,10 +57,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 	    // Handle item selection
 	    switch (item.getItemId()) {
 	    case R.id.settings:
-	    	
+	    	Intent preferences = new Intent(this, GeoloqiPreferences.class);
+	    	startActivity(preferences);
 	        return true;
 	    case R.id.quit:
-	        // exit();
+	        // quit();
 	        return true;
 	    default:
 	        return super.onOptionsItemSelected(item);
