@@ -91,4 +91,24 @@ public class LQLocationData extends SQLiteOpenHelper {
 		}
 		return null;
 	}
+
+	public Cursor getUnsentPoints() {
+		SQLiteDatabase db = this.getWritableDatabase();
+		// Mark all points for sending
+		db.execSQL("UPDATE lqLocationData SET sent = 1 WHERE sent = 0");
+		// Retrieve a cursor with these points
+		Cursor cursor = db.rawQuery("SELECT * FROM lqLocationData WHERE sent = 1 ORDER BY date DESC", null);
+		return cursor;
+	}
+
+	public void unmarkPointsForSending() {
+		SQLiteDatabase db = this.getWritableDatabase();
+		db.execSQL("UPDATE lqLocationData SET sent = 0 WHERE sent = 1");
+	}
+
+	public void clearSentPoints() {
+		SQLiteDatabase db = this.getWritableDatabase();
+		// Delete all points that were marked for sending. If any points have come in in the mean time, they won't be deleted.
+		db.execSQL("DELETE FROM lqLocationData WHERE sent = 1");
+	}
 }

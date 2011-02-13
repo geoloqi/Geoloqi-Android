@@ -5,6 +5,8 @@ import java.util.TimerTask;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -14,6 +16,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -43,8 +46,9 @@ public class GeoloqiService extends Service implements LocationListener {
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 		db = new LQLocationData(this);
 		
+		int rateLimit = GeoloqiPreferences.getRateLimit(this);
 		sendingTimer = new Timer();
-		sendingTimer.schedule(new LQSendingTimerTask(), 0, 10000);
+		sendingTimer.schedule(new LQSendingTimerTask(), 0, rateLimit * 1000);
 	}
 
 	@Override
@@ -69,7 +73,10 @@ public class GeoloqiService extends Service implements LocationListener {
 
 	public void onLocationChanged(Location location) {
 		Log.d(TAG, location.toString());
-		db.addLocation(location, distanceFilter, (int)trackingLimit, 0);
+		int rateLimit = GeoloqiPreferences.getRateLimit(this);
+//		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(this);
+//		int rateLimit = Integer.parseInt(p.getString(GeoloqiPreferences.PREF_RATELIMIT_KEY, "300"));
+		db.addLocation(location, distanceFilter, (int)trackingLimit, rateLimit);
 	}
 
 	public void onProviderDisabled(String provider) {
@@ -86,13 +93,19 @@ public class GeoloqiService extends Service implements LocationListener {
 		
 	}
 	
-
+	// TODO: Is there something better than AsyncTask to use here since this is a background service?
 	class LQFlushQueue extends AsyncTask<Void, Void, Void> {
 
 		// Doesn't have access to the UI thread
 		@Override
 		protected Void doInBackground(Void... v) {
 			Log.d(TAG, "Flushing queue...");
+			
+			// Get all unsent points from the DB
+			Cursor cur = db.getUnsentPoints();
+			
+			// Send to the Geoloqi API
+			GeoloqiHTTPRequest.singleton().locationUpdate(cur, db);
 			
 			return null;
 		}
