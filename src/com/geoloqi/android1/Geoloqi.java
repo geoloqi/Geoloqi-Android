@@ -21,7 +21,7 @@ import android.widget.TextView;
 public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "GeoloqiServiceDemo";
 	private Button buttonStart, buttonStop, buttonUpdate;
-	private TextView latLabel, lngLabel;
+	private TextView latLabel, lngLabel, numPointsLabel;
 	protected LQLocationData db;
 	private Handler handler = new Handler();
 
@@ -35,6 +35,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		buttonUpdate = (Button) findViewById(R.id.buttonUpdate);
 		latLabel = (TextView) findViewById(R.id.textLatitude);
 		lngLabel = (TextView) findViewById(R.id.textLongitude);
+		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
 
 		buttonStart.setOnClickListener(this);
 		buttonStop.setOnClickListener(this);
@@ -42,6 +43,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		db = new LQLocationData(this);
 		new Timer().schedule(new MyTimerTask(), 0, 1000);
+
+		Log.d(TAG, "onClick: starting srvice");
+		startService(new Intent(this, GeoloqiService.class));
 	}
 
 	@Override
@@ -62,6 +66,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	        return true;
 	    case R.id.quit:
 	        // quit();
+	    	System.exit(0);
 	        return true;
 	    default:
 	        return super.onOptionsItemSelected(item);
@@ -85,11 +90,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 		}
 	}
 
-	class LQUpdateUI extends AsyncTask<Void, Void, Cursor> {
+	class LQUpdateUI extends AsyncTask<Void, Void, LQPoint> {
 
 		// Doesn't have access to the UI thread
 		@Override
-		protected Cursor doInBackground(Void... v) {
+		protected LQPoint doInBackground(Void... v) {
 			return db.getLastLocation();
 		}
 
@@ -99,14 +104,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		// Runs with the return value of doInBackground, has access to the UI thread
 		@Override
-		protected void onPostExecute(Cursor cursor) {
-			double latitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LATITUDE));
-			double longitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LONGITUDE));
-
-			latLabel.setText(""+latitude);
-			lngLabel.setText(""+longitude);
-			
-			cursor.close();
+		protected void onPostExecute(LQPoint point) {
+			if(point== null)
+				return;
+				
+			latLabel.setText("Lat: "+point.latitude);
+			lngLabel.setText("Lng: "+point.longitude);
+			numPointsLabel.setText("Points in Queue: "+db.numberOfUnsentPoints());
 		}		
 	}
 

@@ -40,8 +40,8 @@ public class GeoloqiService extends Service implements LocationListener {
 		Toast.makeText(this, "My Service Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onCreate");
 		
-		player = MediaPlayer.create(this, R.raw.braincandy);
-		player.setLooping(false); // Set looping
+		// player = MediaPlayer.create(this, R.raw.digitalsublime);
+		// player.setLooping(false); // Set looping
 		
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 		db = new LQLocationData(this);
@@ -55,7 +55,8 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onDestroy() {
 		Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");
-		player.stop();
+		// player.stop();
+		sendingTimer.cancel();
 		Log.d(TAG, "Points: " + db.numberOfUnsentPoints());
 	}
 	
@@ -63,7 +64,7 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onStart(Intent intent, int startid) {
 		Toast.makeText(this, "My Service Started", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onStart");
-		player.start();
+		// player.start();
 		
 		String bestProvider = locationManager.getBestProvider(new Criteria(), true);
 		locationManager.requestLocationUpdates(bestProvider, distanceFilter, trackingLimit, this);
@@ -74,8 +75,6 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onLocationChanged(Location location) {
 		Log.d(TAG, location.toString());
 		int rateLimit = GeoloqiPreferences.getRateLimit(this);
-//		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(this);
-//		int rateLimit = Integer.parseInt(p.getString(GeoloqiPreferences.PREF_RATELIMIT_KEY, "300"));
 		db.addLocation(location, distanceFilter, (int)trackingLimit, rateLimit);
 	}
 
@@ -85,12 +84,21 @@ public class GeoloqiService extends Service implements LocationListener {
 
 	public void onProviderEnabled(String provider) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub		
+	}
+	
+	/**
+	 * Kill and reset the timer for sending the points to the server
+	 */
+	public void restartSendingQueue() {
+		int rateLimit = GeoloqiPreferences.getRateLimit(this);
+		sendingTimer.cancel();
+		sendingTimer = new Timer();
+		sendingTimer.schedule(new LQSendingTimerTask(), 0, rateLimit * 1000);
+		Log.d(TAG, "Restarting timer task for sending points to server");
 	}
 	
 	// TODO: Is there something better than AsyncTask to use here since this is a background service?
@@ -102,10 +110,8 @@ public class GeoloqiService extends Service implements LocationListener {
 			Log.d(TAG, "Flushing queue...");
 			
 			// Get all unsent points from the DB
-			Cursor cur = db.getUnsentPoints();
-			
 			// Send to the Geoloqi API
-			GeoloqiHTTPRequest.singleton().locationUpdate(cur, db);
+			GeoloqiHTTPRequest.singleton().locationUpdate(db);
 			
 			return null;
 		}

@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
+import android.util.Log;
 
 public class LQLocationData extends SQLiteOpenHelper {
 
@@ -77,19 +78,26 @@ public class LQLocationData extends SQLiteOpenHelper {
 	public int numberOfUnsentPoints() {
 		SQLiteDatabase db = this.getReadableDatabase();
 		Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM lqLocationData WHERE sent = 0", null);
+		int unsentPoints = 0;
 		while(cursor.moveToNext()) {
-			return cursor.getInt(0);
+			unsentPoints = cursor.getInt(0);
 		}
-		return 0;
+		cursor.close();
+		return unsentPoints;
 	}
 	
-	public Cursor getLastLocation() {
+	public LQPoint getLastLocation() {
 		SQLiteDatabase db = this.getReadableDatabase();
 		Cursor cursor = db.rawQuery("SELECT * FROM lqLocationData ORDER BY date DESC LIMIT 1", null);
+		LQPoint point = null;
 		while(cursor.moveToNext()) {
-			return cursor;
+			point = new LQPoint();
+			point.latitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LATITUDE));
+			point.longitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LONGITUDE));
+			point.date = cursor.getInt(cursor.getColumnIndex(LQLocationData.DATE));
 		}
-		return null;
+		cursor.close();
+		return point;
 	}
 
 	public Cursor getUnsentPoints() {

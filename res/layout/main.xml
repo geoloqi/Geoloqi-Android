@@ -7,6 +7,7 @@
 
 <TextView android:layout_width="wrap_content" android:text="@+id/textLatitude" android:layout_height="wrap_content" android:id="@+id/textLatitude"></TextView>
 <TextView android:layout_width="wrap_content" android:text="@+id/textLongitude" android:layout_height="wrap_content" android:id="@+id/textLongitude"></TextView>
+<TextView android:layout_width="wrap_content" android:text="@+id/textNumPointsInQueue" android:layout_height="wrap_content" android:id="@+id/textNumPointsInQueue"></TextView>
 
 <TextView  
     android:layout_width="fill_parent" 
