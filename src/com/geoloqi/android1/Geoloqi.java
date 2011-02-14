@@ -32,14 +32,14 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		buttonStart = (Button) findViewById(R.id.buttonStart);
 		buttonStop = (Button) findViewById(R.id.buttonStop);
-		buttonUpdate = (Button) findViewById(R.id.buttonUpdate);
+		// buttonUpdate = (Button) findViewById(R.id.buttonUpdate);
 		latLabel = (TextView) findViewById(R.id.textLatitude);
 		lngLabel = (TextView) findViewById(R.id.textLongitude);
 		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
 
 		buttonStart.setOnClickListener(this);
 		buttonStop.setOnClickListener(this);
-		buttonUpdate.setOnClickListener(this);
+		// buttonUpdate.setOnClickListener(this);
 
 		db = new LQLocationData(this);
 		new Timer().schedule(new MyTimerTask(), 0, 1000);
@@ -83,10 +83,10 @@ public class Geoloqi extends Activity implements OnClickListener {
 			Log.d(TAG, "onClick: stopping srvice");
 			stopService(new Intent(this, GeoloqiService.class));
 			break;
-		case R.id.buttonUpdate:
-			Log.d(TAG, "onClick: update");
-			new LQUpdateUI().execute();
-			break;
+//		case R.id.buttonUpdate:
+//			Log.d(TAG, "onClick: update");
+//			new LQUpdateUI().execute();
+//			break;
 		}
 	}
 

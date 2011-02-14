@@ -8,7 +8,7 @@
 	<!-- Preferences -->
     <string name="tracking_settings">Tracking Settings</string>
     <string name="rate_limit_preference">Rate Limit</string>
-    <string name="summary_rate_limit_preference">This is an explanation</string>
+    <string name="summary_rate_limit_preference">Sets the interval at which the points are sent to the server.</string>
     <string-array name="entries_rate_limit_preference">
     	<item>1 Second</item>
     	<item>10 Seconds</item>

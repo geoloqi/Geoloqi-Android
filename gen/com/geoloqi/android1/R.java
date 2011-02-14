@@ -18,12 +18,11 @@ public final class R {
         public static final int icon=0x7f020000;
     }
     public static final class id {
-        public static final int about=0x7f080007;
+        public static final int about=0x7f080006;
         public static final int buttonStart=0x7f080003;
         public static final int buttonStop=0x7f080004;
-        public static final int buttonUpdate=0x7f080005;
-        public static final int quit=0x7f080008;
-        public static final int settings=0x7f080006;
+        public static final int quit=0x7f080007;
+        public static final int settings=0x7f080005;
         public static final int textLatitude=0x7f080000;
         public static final int textLongitude=0x7f080001;
         public static final int textNumPointsInQueue=0x7f080002;

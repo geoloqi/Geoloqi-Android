@@ -40,9 +40,6 @@ public class GeoloqiService extends Service implements LocationListener {
 		Toast.makeText(this, "My Service Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onCreate");
 		
-		// player = MediaPlayer.create(this, R.raw.digitalsublime);
-		// player.setLooping(false); // Set looping
-		
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 		db = new LQLocationData(this);
 		
@@ -55,7 +52,6 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onDestroy() {
 		Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");
-		// player.stop();
 		sendingTimer.cancel();
 		Log.d(TAG, "Points: " + db.numberOfUnsentPoints());
 	}
@@ -64,7 +60,6 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onStart(Intent intent, int startid) {
 		Toast.makeText(this, "My Service Started", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onStart");
-		// player.start();
 		
 		String bestProvider = locationManager.getBestProvider(new Criteria(), true);
 		locationManager.requestLocationUpdates(bestProvider, distanceFilter, trackingLimit, this);
@@ -107,10 +102,9 @@ public class GeoloqiService extends Service implements LocationListener {
 		// Doesn't have access to the UI thread
 		@Override
 		protected Void doInBackground(Void... v) {
-			Log.d(TAG, "Flushing queue...");
+			// Log.d(TAG, "Flushing queue...");
 			
-			// Get all unsent points from the DB
-			// Send to the Geoloqi API
+			// Get all unsent points from the DB and send to the Geoloqi API
 			GeoloqiHTTPRequest.singleton().locationUpdate(db);
 			
 			return null;
@@ -123,7 +117,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		// Runs with the return value of doInBackground
 		@Override
 		protected void onPostExecute(Void v) {
-			Log.d(TAG, "Flush queue completed");
+			// Log.d(TAG, "Flush queue completed");
 			
 		}		
 	}

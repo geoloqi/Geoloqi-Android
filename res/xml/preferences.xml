@@ -13,5 +13,17 @@
                android:dialogTitle="@string/rate_limit_preference" 
                android:defaultValue="300" />
 
+	<EditTextPreference
+                android:key="username"
+                android:title="Username"
+                android:summary="Enter your Geoloqi email address or username"
+                android:dialogTitle="Username" />
+                
+	<EditTextPreference
+                android:key="password"
+                android:title="Password"
+                android:summary="Enter your Geoloqi password"
+                android:dialogTitle="Password" />
+                
 	</PreferenceCategory>
 </PreferenceScreen>
