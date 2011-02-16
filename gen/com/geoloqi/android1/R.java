@@ -15,17 +15,19 @@ public final class R {
     public static final class attr {
     }
     public static final class drawable {
-        public static final int icon=0x7f020000;
+        public static final int geoloqi_300x100=0x7f020000;
+        public static final int ic_launcher_geoloqi=0x7f020001;
+        public static final int ic_stat_notify=0x7f020002;
     }
     public static final class id {
         public static final int about=0x7f080006;
-        public static final int buttonStart=0x7f080003;
-        public static final int buttonStop=0x7f080004;
+        public static final int buttonStart=0x7f080004;
+        public static final int geoloqiLogo=0x7f080000;
         public static final int quit=0x7f080007;
         public static final int settings=0x7f080005;
-        public static final int textLatitude=0x7f080000;
-        public static final int textLongitude=0x7f080001;
-        public static final int textNumPointsInQueue=0x7f080002;
+        public static final int textLatitude=0x7f080001;
+        public static final int textLongitude=0x7f080002;
+        public static final int textNumPointsInQueue=0x7f080003;
     }
     public static final class layout {
         public static final int main=0x7f030000;

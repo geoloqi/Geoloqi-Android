@@ -111,7 +111,14 @@ public class GeoloqiHTTPRequest {
 			Log.i(Geoloqi.TAG, "Error sending points: " + e.getMessage());
 			db.unmarkPointsForSending();
 		}
-		
+	}
+	
+	public String oauthToken(String username, String password) {
+		return "";
+	}
+	
+	public String oauthToken(String refreshToken) {
+		return "";
 	}
 	
 }

@@ -1,9 +1,14 @@
 package com.geoloqi.android1;
 
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -22,11 +27,15 @@ import android.widget.Toast;
 
 public class GeoloqiService extends Service implements LocationListener {
 	private static final String TAG = "GeoloqiService";
+	private static final int NOTIFICATION_ID = 1024;
 	MediaPlayer player;
 	LocationManager locationManager;
 	LQLocationData db;
+	Date lastPointReceived;
+	Date lastPointSent;
 	int distanceFilter = 5;
 	float trackingLimit = 10.0f;
+	int rateLimit;
 	Timer sendingTimer;
 	private Handler handler = new Handler();
 	
@@ -37,40 +46,75 @@ public class GeoloqiService extends Service implements LocationListener {
 	
 	@Override
 	public void onCreate() {
-		Toast.makeText(this, "My Service Created", Toast.LENGTH_LONG).show();
+		// Toast.makeText(this, "Geoloqi Tracker Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onCreate");
 		
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 		db = new LQLocationData(this);
 		
-		int rateLimit = GeoloqiPreferences.getRateLimit(this);
+		rateLimit = GeoloqiPreferences.getRateLimit(this);
 		sendingTimer = new Timer();
 		sendingTimer.schedule(new LQSendingTimerTask(), 0, rateLimit * 1000);
 	}
 
 	@Override
 	public void onDestroy() {
-		Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "Geoloqi Tracker Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");
 		sendingTimer.cancel();
+		NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+		notificationManager.cancel(GeoloqiService.NOTIFICATION_ID);
 		Log.d(TAG, "Points: " + db.numberOfUnsentPoints());
 	}
 	
 	@Override
 	public void onStart(Intent intent, int startid) {
-		Toast.makeText(this, "My Service Started", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "Geoloqi Tracker Started", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onStart");
 		
 		String bestProvider = locationManager.getBestProvider(new Criteria(), true);
 		locationManager.requestLocationUpdates(bestProvider, distanceFilter, trackingLimit, this);
+		
+		// From http://developer.android.com/guide/topics/ui/notifiers/notifications.html
+		
+		// Get a reference to the notification manager
+		NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+		
+		// Instantiate the notification
+		CharSequence tickerText = "Geoloqi tracker is running";
+		Notification notification = new Notification(R.drawable.ic_stat_notify, tickerText, System.currentTimeMillis());
+		
+		// Define the Notification's expanded message and Intent
+		Context context = getApplicationContext();
+		CharSequence contentTitle = "Geoloqi";
+		CharSequence contentText = "GPS tracker is running";
+		Intent notificationIntent = new Intent(this, Geoloqi.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);		
+
+		// Pass the Notification to the NotificationManager
+		notificationManager.notify(GeoloqiService.NOTIFICATION_ID, notification);
 		
 		Log.d(TAG, "Provider: " + bestProvider);
 	}
 
 	public void onLocationChanged(Location location) {
 		Log.d(TAG, location.toString());
-		int rateLimit = GeoloqiPreferences.getRateLimit(this);
-		db.addLocation(location, distanceFilter, (int)trackingLimit, rateLimit);
+		// Ignore points closer together than 1 second
+		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - 1000)
+		{
+			lastPointReceived = new Date();
+			db.addLocation(location, distanceFilter, (int)trackingLimit, rateLimit);
+
+			// If the user has changed the rate limit, reset the timer
+			int newRateLimit = GeoloqiPreferences.getRateLimit(this);
+			if(newRateLimit != rateLimit) {
+				sendingTimer.cancel();
+				sendingTimer = new Timer();
+				sendingTimer.schedule(new LQSendingTimerTask(), 0, newRateLimit * 1000);
+				rateLimit = newRateLimit;
+			}
+		}
 	}
 
 	public void onProviderDisabled(String provider) {
