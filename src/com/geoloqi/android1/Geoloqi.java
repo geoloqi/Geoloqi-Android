@@ -7,24 +7,32 @@ import java.util.TimerTask;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.app.ActivityManager.RunningServiceInfo;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "GeoloqiServiceDemo";
+	private static final int LOGIN_DIALOG_ID = 1;
 	private Button buttonStart; // , buttonStop, buttonUpdate;
 	private TextView latLabel, lngLabel, numPointsLabel;
 	protected LQLocationData db;
@@ -76,6 +84,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 	    	Intent preferences = new Intent(this, GeoloqiPreferences.class);
 	    	startActivity(preferences);
 	        return true;
+	    case R.id.login:
+	    	this.showDialog(LOGIN_DIALOG_ID);
+	    	return true;
 	    case R.id.quit:
 			stopService(new Intent(this, GeoloqiService.class));
 	    	System.exit(0);
@@ -106,7 +117,46 @@ public class Geoloqi extends Activity implements OnClickListener {
 		}
 	}
 
-	public boolean isServiceRunning(){
+	private AlertDialog buildLoginDialog() {
+    	LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    	final View layout = inflater.inflate(R.layout.login_dialog, (ViewGroup)findViewById(R.id.root));
+    	
+    	final EditText email = (EditText)layout.findViewById(R.id.editTextEmail);
+    	final EditText pwd = (EditText)layout.findViewById(R.id.editTextPassword);
+
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setView(layout);
+    	builder.setTitle("Log In");
+    	
+    	builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				
+				Log.d(TAG, "Log in clicked");
+				
+				Geoloqi.this.removeDialog(LOGIN_DIALOG_ID);
+			}
+		});
+
+    	builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				Geoloqi.this.removeDialog(LOGIN_DIALOG_ID);
+			}
+		});
+
+    	return builder.create();
+	}
+	
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		switch(id) {
+			case LOGIN_DIALOG_ID:
+				return buildLoginDialog();
+			default:
+				return null;
+		}
+	}
+	
+	public boolean isServiceRunning() {
         final ActivityManager activityManager = (ActivityManager)getSystemService(Geoloqi.ACTIVITY_SERVICE);
         final List<RunningServiceInfo> services = activityManager.getRunningServices(Integer.MAX_VALUE);
 	

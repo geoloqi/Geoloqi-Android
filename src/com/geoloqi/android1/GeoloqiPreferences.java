@@ -18,8 +18,6 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 		if(staticPreferences == null)
 			staticPreferences = new GeoloqiPreferences();
 
-		// staticPreferences.preferences = getPreferences(MODE_PRIVATE);
-
 		return staticPreferences;
 	}
 	

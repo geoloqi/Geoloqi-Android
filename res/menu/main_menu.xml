@@ -3,9 +3,8 @@
     <item android:id="@+id/settings"
           android:title="Settings" 
           android:icon="@android:drawable/ic_menu_preferences" />
-    <item android:id="@+id/about"
-          android:title="About" 
-          android:icon="@android:drawable/ic_menu_info_details" />
+    <item android:id="@+id/login"
+          android:title="Log In" />
     <item android:id="@+id/quit"
           android:title="@string/quit" />
 </menu>
