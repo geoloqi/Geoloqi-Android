@@ -61,7 +61,10 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onDestroy() {
 		Toast.makeText(this, "Geoloqi Tracker Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");
+		
+		locationManager.removeUpdates(this);
 		sendingTimer.cancel();
+		
 		NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 		notificationManager.cancel(GeoloqiService.NOTIFICATION_ID);
 		Log.d(TAG, "Points: " + db.numberOfUnsentPoints());
@@ -132,6 +135,7 @@ public class GeoloqiService extends Service implements LocationListener {
 	/**
 	 * Kill and reset the timer for sending the points to the server
 	 */
+	/*
 	public void restartSendingQueue() {
 		int rateLimit = GeoloqiPreferences.getRateLimit(this);
 		sendingTimer.cancel();
@@ -139,6 +143,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		sendingTimer.schedule(new LQSendingTimerTask(), 0, rateLimit * 1000);
 		Log.d(TAG, "Restarting timer task for sending points to server");
 	}
+	*/
 	
 	// TODO: Is there something better than AsyncTask to use here since this is a background service?
 	class LQFlushQueue extends AsyncTask<Void, Void, Void> {
