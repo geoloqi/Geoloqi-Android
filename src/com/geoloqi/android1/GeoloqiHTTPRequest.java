@@ -1,30 +1,36 @@
 package com.geoloqi.android1;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
 
 public class GeoloqiHTTPRequest {
 
 	private static GeoloqiHTTPRequest singleton;
+	private String urlBase = "https://api.geoloqi.com/1/";
 	
 	public static GeoloqiHTTPRequest singleton() {
 		if(singleton == null)
@@ -33,7 +39,7 @@ public class GeoloqiHTTPRequest {
 		return singleton;
 	}
 
-	public void locationUpdate(LQLocationData db) {
+	public void locationUpdate(LQLocationData db, Context context) {
 		Cursor cursor = db.getUnsentPoints();
 
 		// Loop through the cursor and format a JSON object
@@ -88,13 +94,17 @@ public class GeoloqiHTTPRequest {
 		// Post the JSON object to the API
 		Log.d(Geoloqi.TAG, json.toString());
 		try {
-			
+	        LQToken token = GeoloqiPreferences.getToken(context);
+	        if(token == null) {
+	        	throw new Exception("No access token present. Won't attempt to send points.");
+	        }
+	        
 			HttpClient client = new DefaultHttpClient();  
-	        String postURL = "https://api.geoloqi.com/1/location/update";
+	        String postURL = this.urlBase + "location/update";
 	        HttpPost post = new HttpPost(postURL); 
 	        post.setHeader("Content-type", "application/json");
-	        // TODO: Replace this with the real OAuth token
-	        post.setHeader("Authorization", "OAuth " + GeoloqiConstants.GEOLOQI_TOKEN);
+
+	        post.setHeader("Authorization", "OAuth " + token.accessToken);
 
             StringEntity ent = new StringEntity(json.toString(),HTTP.UTF_8);
             post.setEntity(ent);
@@ -102,10 +112,33 @@ public class GeoloqiHTTPRequest {
             HttpResponse responsePOST = client.execute(post);  
             HttpEntity resEntity = responsePOST.getEntity();  
             if (resEntity != null) {    
-                Log.i(Geoloqi.TAG,EntityUtils.toString(resEntity));
+	        	String responseString = EntityUtils.toString(resEntity);
+	            JSONObject response = new JSONObject(responseString);
+
+	            if(response.has("error"))
+	            {
+	    			db.unmarkPointsForSending();
+	    			
+	            	// If the error was because of an expired token, refresh the token and try again
+	            	if(response.getString("error").equals("expired_token")) {
+	    				token = GeoloqiHTTPRequest.singleton().oauthToken(token.refreshToken);
+	    				if(token != null) {
+	    					GeoloqiPreferences.setToken(token, context);
+	    					// Recurse!
+	    					locationUpdate(db, context);
+	    					return;
+	    				}
+	            	} else {
+		            	throw new Exception(response.get("error") + " " + response.get("error_description"));
+	            	}
+	            }
+
+	            Log.i(Geoloqi.TAG, responseString);
+				db.clearSentPoints();
+            } else {
+            	Log.i(Geoloqi.TAG, "Unknown error");
+    			db.unmarkPointsForSending();
             }
-			
-			db.clearSentPoints();
 		} catch(Exception e) {
 			// Don't remove the points from the queue if the HTTP request failed
 			Log.i(Geoloqi.TAG, "Error sending points: " + e.getMessage());
@@ -113,12 +146,81 @@ public class GeoloqiHTTPRequest {
 		}
 	}
 	
-	public String oauthToken(String username, String password) {
-		return "";
+	public LQToken oauthToken(String username, String password) {
+		try {
+			HttpClient client = new DefaultHttpClient();  
+	        String postURL = this.urlBase + "oauth/token";
+	        HttpPost post = new HttpPost(postURL); 
+
+	        ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
+	        params.add(new BasicNameValuePair("grant_type", "password"));
+	        params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
+	        params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
+	        params.add(new BasicNameValuePair("username", username));
+	        params.add(new BasicNameValuePair("password", password));
+	        post.setEntity(new UrlEncodedFormEntity(params));
+
+	        HttpResponse responsePOST = client.execute(post);  
+	        HttpEntity resEntity = responsePOST.getEntity();  
+	        if (resEntity != null) {    
+	        	String responseString = EntityUtils.toString(resEntity);
+	            JSONObject response = new JSONObject(responseString);
+
+	            if(response.has("error"))
+	            {
+	            	// Handle friendly user/pass login error messages here
+	            	throw new Exception(response.get("error") + " " + response.get("error_description"));
+	            }
+	            
+	            return new LQToken(
+	            			response.get("access_token").toString(), 
+	            			response.get("refresh_token").toString(), 
+	            			response.get("expires_in").toString(), 
+	            			response.get("scope").toString());
+	        } else {
+	        	Log.i(Geoloqi.TAG, "++++ Error getting token");
+	        }
+		} catch(Exception e) {
+			Log.i(Geoloqi.TAG, "Error getting token: " + e.toString());
+		}
+        return null;
 	}
 	
-	public String oauthToken(String refreshToken) {
-		return "";
+	public LQToken oauthToken(String refreshToken) {
+		try {
+			HttpClient client = new DefaultHttpClient();  
+	        String postURL = this.urlBase + "oauth/token";
+	        HttpPost post = new HttpPost(postURL); 
+
+	        ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
+	        params.add(new BasicNameValuePair("grant_type", "refresh_token"));
+	        params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
+	        params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
+	        params.add(new BasicNameValuePair("refresh_token", refreshToken));
+	        post.setEntity(new UrlEncodedFormEntity(params));
+
+	        HttpResponse responsePOST = client.execute(post);  
+	        HttpEntity resEntity = responsePOST.getEntity();  
+	        if (resEntity != null) {    
+	        	String responseString = EntityUtils.toString(resEntity);
+
+	            JSONObject response = new JSONObject(responseString);
+
+	            if(response.has("error"))
+	            	throw new Exception(response.get("error") + " " + response.get("error_description"));
+	            
+	            return new LQToken(
+	            			response.get("access_token").toString(), 
+	            			response.get("refresh_token").toString(), 
+	            			response.get("expires_in").toString(), 
+	            			response.get("scope").toString());
+	        } else {
+	        	Log.i(Geoloqi.TAG, "++++ Error getting token");
+	        }
+		} catch(Exception e) {
+			Log.i(Geoloqi.TAG, "Error getting token: " + e.toString());
+		}
+        return null;
 	}
 	
 }

@@ -58,7 +58,7 @@ public class LQLocationData extends SQLiteOpenHelper {
 		}
 	}
 
-	public void addLocation(Location location, int distanceFilter, int trackingLimit, int rateLimit) {
+	public void addLocation(Location location, float distanceFilter, long trackingLimit, int rateLimit) {
 		SQLiteDatabase db = this.getWritableDatabase();
 		ContentValues values = new ContentValues();
 		values.put(DATE, (int)(System.currentTimeMillis() / 1000));

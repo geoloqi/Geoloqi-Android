@@ -13,10 +13,13 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -31,7 +34,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 public class Geoloqi extends Activity implements OnClickListener {
-	public static final String TAG = "GeoloqiServiceDemo";
+	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
 	private Button buttonStart; // , buttonStop, buttonUpdate;
 	private TextView latLabel, lngLabel, numPointsLabel;
@@ -50,6 +53,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		lngLabel = (TextView) findViewById(R.id.textLongitude);
 		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
 
+		
 		buttonStart.setOnClickListener(this);
 		// buttonStop.setOnClickListener(this);
 		// buttonUpdate.setOnClickListener(this);
@@ -131,7 +135,9 @@ public class Geoloqi extends Activity implements OnClickListener {
     	builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				
-				Log.d(TAG, "Log in clicked");
+				LQToken token = GeoloqiHTTPRequest.singleton().oauthToken(email.getText().toString(), pwd.getText().toString());
+				GeoloqiPreferences.setToken(token, Geoloqi.this);
+				Log.d(Geoloqi.TAG, token.toString());
 				
 				Geoloqi.this.removeDialog(LOGIN_DIALOG_ID);
 			}
@@ -179,7 +185,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	        }
 	    }
 	    return isServiceFound;
-	 }
+	}
 		
 	class LQUpdateUI extends AsyncTask<Void, Void, LQPoint> {
 

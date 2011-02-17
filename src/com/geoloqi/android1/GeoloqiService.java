@@ -33,8 +33,8 @@ public class GeoloqiService extends Service implements LocationListener {
 	LQLocationData db;
 	Date lastPointReceived;
 	Date lastPointSent;
-	int distanceFilter = 5;
-	float trackingLimit = 10.0f;
+	float minDistance = 1.0f;
+	long minTime = 1000l;
 	int rateLimit;
 	Timer sendingTimer;
 	private Handler handler = new Handler();
@@ -76,7 +76,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		Log.d(TAG, "onStart");
 		
 		String bestProvider = locationManager.getBestProvider(new Criteria(), true);
-		locationManager.requestLocationUpdates(bestProvider, distanceFilter, trackingLimit, this);
+		locationManager.requestLocationUpdates(bestProvider, minTime, minDistance, this);
 		
 		// From http://developer.android.com/guide/topics/ui/notifiers/notifications.html
 		
@@ -106,8 +106,12 @@ public class GeoloqiService extends Service implements LocationListener {
 		// Ignore points closer together than 1 second
 		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - 1000)
 		{
+			// Ignore points worse than 600m accurate (super rough position appears to be about 1000m)
+			if(location.hasAccuracy() && location.getAccuracy() > 600)
+				return;
+			
 			lastPointReceived = new Date();
-			db.addLocation(location, distanceFilter, (int)trackingLimit, rateLimit);
+			db.addLocation(location, minDistance, minTime, rateLimit);
 
 			// If the user has changed the rate limit, reset the timer
 			int newRateLimit = GeoloqiPreferences.getRateLimit(this);
@@ -151,10 +155,8 @@ public class GeoloqiService extends Service implements LocationListener {
 		// Doesn't have access to the UI thread
 		@Override
 		protected Void doInBackground(Void... v) {
-			// Log.d(TAG, "Flushing queue...");
-			
 			// Get all unsent points from the DB and send to the Geoloqi API
-			GeoloqiHTTPRequest.singleton().locationUpdate(db);
+			GeoloqiHTTPRequest.singleton().locationUpdate(db, GeoloqiService.this);
 			
 			return null;
 		}
