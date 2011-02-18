@@ -4,10 +4,11 @@
   android:id="@+id/root"
   android:orientation="vertical"
   android:layout_width="fill_parent"
-  android:layout_height="fill_parent">
+  android:layout_height="fill_parent"
+  android:padding="5dip">
 
 	<TextView 
-		android:text="Email" 
+		android:text="Email or Username" 
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content" 
 		android:id="@+id/textEmail" />
@@ -31,5 +32,10 @@
 		android:id="@+id/editTextPassword"
 		android:maxLines="1"
 		android:inputType="textPassword" />
-		
+
+	<TextView 
+		android:text="Visit beta.geoloqi.com to create an account"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content" />
+
 </LinearLayout>

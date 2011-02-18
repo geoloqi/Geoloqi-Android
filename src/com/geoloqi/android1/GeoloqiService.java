@@ -25,6 +25,7 @@ import android.widget.Toast;
 public class GeoloqiService extends Service implements LocationListener {
 	private static final String TAG = "GeoloqiService";
 	private static final int NOTIFICATION_ID = 1024;
+	Notification notification;
 	MediaPlayer player;
 	LocationManager locationManager;
 	LQLocationData db;
@@ -84,7 +85,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		
 		// Instantiate the notification
 		CharSequence tickerText = "Geoloqi tracker is running";
-		Notification notification = new Notification(R.drawable.ic_stat_notify, tickerText, System.currentTimeMillis());
+		notification = new Notification(R.drawable.ic_stat_notify, tickerText, System.currentTimeMillis());
 		
 		// Define the Notification's expanded message and Intent
 		Context context = getApplicationContext();
@@ -92,6 +93,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		CharSequence contentText = "GPS tracker is running";
 		Intent notificationIntent = new Intent(this, Geoloqi.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		notification.flags = Notification.FLAG_ONGOING_EVENT;
 		notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);		
 
 		// Pass the Notification to the NotificationManager
@@ -128,6 +130,23 @@ public class GeoloqiService extends Service implements LocationListener {
 				locationManager.removeUpdates(this);
 				locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
 			}
+			
+			CharSequence contentText = "" + (location.getSpeed() * 3.6) + " km/h, "
+				+ db.numberOfUnsentPoints() + " points";
+			
+			// Define the Notification's expanded message and Intent
+			Context context = getApplicationContext();
+			CharSequence contentTitle = "Geoloqi";
+			Intent notificationIntent = new Intent(this, Geoloqi.class);
+			PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+			notification.flags = Notification.FLAG_ONGOING_EVENT;
+			notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);		
+
+			// Get a reference to the notification manager
+			NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+			// Pass the Notification to the NotificationManager
+			notificationManager.notify(GeoloqiService.NOTIFICATION_ID, notification);
+			
 		}
 	}
 

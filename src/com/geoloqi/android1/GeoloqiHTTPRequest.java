@@ -44,6 +44,8 @@ public class GeoloqiHTTPRequest {
 			return;
 		}
 		
+		updateInProgress = 1;
+		
 		Cursor cursor = db.getUnsentPoints();
 
 		// Loop through the cursor and format a JSON object
