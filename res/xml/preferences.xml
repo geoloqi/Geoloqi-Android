@@ -12,6 +12,15 @@
                android:entryValues="@array/entryvalues_rate_limit_preference"
                android:dialogTitle="@string/rate_limit_preference" 
                android:defaultValue="300" />
+
+	<ListPreference
+               android:key="min_time"
+               android:title="@string/min_time_preference"
+               android:summary="@string/summary_min_time_preference"
+               android:entries="@array/entries_min_time_preference"
+               android:entryValues="@array/entryvalues_min_time_preference"
+               android:dialogTitle="@string/min_time_preference" 
+               android:defaultValue="300" />
                 
 	</PreferenceCategory>
 </PreferenceScreen>

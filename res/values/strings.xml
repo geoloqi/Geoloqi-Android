@@ -33,4 +33,30 @@
     	<item>1200</item>
     	<item>1800</item>
 	</string-array>
+    <string name="min_time_preference">Tracking Limit</string>
+    <string name="summary_min_time_preference">Sets the minimum time interval to request location notifications from the device.</string>
+    <string-array name="entries_min_time_preference">
+    	<item>1 Second</item>
+    	<item>2 Seconds</item>
+    	<item>5 Seconds</item>
+    	<item>10 Seconds</item>
+    	<item>20 Seconds</item>
+    	<item>30 Seconds</item>
+    	<item>1 Minute</item>
+    	<item>2 Minutes</item>
+    	<item>5 Minutes</item>
+    	<item>10 Minutes</item>
+    </string-array>
+	<string-array name="entryvalues_min_time_preference">
+    	<item>1</item>
+    	<item>2</item>
+    	<item>5</item>
+    	<item>10</item>
+    	<item>20</item>
+    	<item>30</item>
+    	<item>60</item>
+    	<item>120</item>
+    	<item>300</item>
+    	<item>600</item>
+	</string-array>
 </resources>

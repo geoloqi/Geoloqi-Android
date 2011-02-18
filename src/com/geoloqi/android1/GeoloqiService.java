@@ -72,6 +72,8 @@ public class GeoloqiService extends Service implements LocationListener {
 		Toast.makeText(this, "Geoloqi Tracker Started", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onStart");
 		
+		minTime = GeoloqiPreferences.getMinTime(this);
+
 		// String bestProvider = locationManager.getBestProvider(new Criteria(), true);
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
 		
@@ -112,11 +114,19 @@ public class GeoloqiService extends Service implements LocationListener {
 
 			// If the user has changed the rate limit, reset the timer
 			int newRateLimit = GeoloqiPreferences.getRateLimit(this);
+			int newMinTime = GeoloqiPreferences.getMinTime(this);
 			if(newRateLimit != rateLimit) {
+				Log.i(Geoloqi.TAG, ">>> Restarting sending timer");
 				sendingTimer.cancel();
 				sendingTimer = new Timer();
 				sendingTimer.schedule(new LQSendingTimerTask(), 0, newRateLimit * 1000);
 				rateLimit = newRateLimit;
+			}
+			if(newMinTime != minTime) {
+				Log.i(Geoloqi.TAG, ">>> Re-registering GPS updates");
+				minTime = newMinTime;
+				locationManager.removeUpdates(this);
+				locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
 			}
 		}
 	}

@@ -70,6 +70,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 		image.setImageResource(R.drawable.geoloqi_300x100);
 	}
 
+	public void onResume() {
+		Log.i(TAG, "Resuming...");
+		super.onResume();
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		Log.d(TAG, "Inflating menu!");

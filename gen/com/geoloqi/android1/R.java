@@ -9,7 +9,9 @@ package com.geoloqi.android1;
 
 public final class R {
     public static final class array {
+        public static final int entries_min_time_preference=0x7f060002;
         public static final int entries_rate_limit_preference=0x7f060000;
+        public static final int entryvalues_min_time_preference=0x7f060003;
         public static final int entryvalues_rate_limit_preference=0x7f060001;
     }
     public static final class attr {
@@ -45,10 +47,12 @@ public final class R {
     }
     public static final class string {
         public static final int app_name=0x7f050000;
+        public static final int min_time_preference=0x7f050007;
         public static final int preferences=0x7f050003;
         public static final int quit=0x7f050001;
         public static final int rate_limit_preference=0x7f050005;
         public static final int sending=0x7f050002;
+        public static final int summary_min_time_preference=0x7f050008;
         public static final int summary_rate_limit_preference=0x7f050006;
         /**  Preferences 
          */

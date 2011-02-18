@@ -13,6 +13,7 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 	
 	private SharedPreferences preferences;
 	public static final String PREF_RATELIMIT_KEY = "rate_limit";
+	public static final String PREF_MINTIME_KEY = "min_time";
 	public static final String PREF_ACCESS_TOKEN = "access_token";
 	public static final String PREF_REFRESH_TOKEN = "refres_token";
 	public static final String PREF_EXPIRES_AT = "expires_at";
@@ -39,14 +40,23 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 	    if( key.equals( PREF_RATELIMIT_KEY ) ){
 	    	// Reset the sending queue timer
 	    	Log.d(Geoloqi.TAG, "New rate limit: " + GeoloqiPreferences.getRateLimit(this));
+	    } else if ( key.equals( PREF_MINTIME_KEY) ) {
+	    	Log.d(Geoloqi.TAG, "New tracking limit: " + GeoloqiPreferences.getMinTime(this));
+	    } else {
+	    	Log.d(Geoloqi.TAG, "Unknown preference changed");
 	    }
 	}
 	
 	public static int getRateLimit(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 		String rateLimit = p.getString(PREF_RATELIMIT_KEY, "300");
-		Log.d(Geoloqi.TAG, "Preferences: " + rateLimit);
 		return Integer.parseInt(rateLimit);
+	}
+
+	public static int getMinTime(Context context) {
+		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
+		String minTime = p.getString(PREF_MINTIME_KEY, "5");
+		return Integer.parseInt(minTime);
 	}
 
 	public static LQToken getToken(Context context) {
