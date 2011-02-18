@@ -7,14 +7,40 @@
 
 <ImageView android:id="@+id/geoloqiLogo" android:layout_width="wrap_content" android:layout_height="wrap_content"></ImageView>
 
-<TextView android:layout_width="wrap_content" android:text="@+id/textLatitude" android:layout_height="wrap_content" android:id="@+id/textLatitude"></TextView>
-<TextView android:layout_width="wrap_content" android:text="@+id/textLongitude" android:layout_height="wrap_content" android:id="@+id/textLongitude"></TextView>
-<TextView android:layout_width="wrap_content" android:text="@+id/textNumPointsInQueue" android:layout_height="wrap_content" android:id="@+id/textNumPointsInQueue"></TextView>
-
-<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/buttonStart" android:text="Start" android:layout_marginTop="20dp"></Button>
-<!--
-<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stop" android:id="@+id/buttonStop"></Button>
--->
-
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:stretchColumns="0">
+    
+    <TableRow>
+    	<TextView android:layout_column="0" android:padding="3dip" android:text="Latitude" />
+		<TextView android:width="120dip" android:text="@+id/textLatitude" android:layout_height="wrap_content" android:id="@+id/textLatitude"></TextView>
+	</TableRow>
+	<TableRow>
+    	<TextView android:layout_column="0" android:padding="3dip" android:text="Longitude" />
+		<TextView android:text="@+id/textLongitude" android:layout_height="wrap_content" android:id="@+id/textLongitude"></TextView>
+	</TableRow>
+	<TableRow>
+    	<TextView android:layout_column="0" android:padding="3dip" android:text="Speed" />
+		<TextView android:text="@+id/textSpeed" android:layout_height="wrap_content" android:id="@+id/textSpeed"></TextView>
+	</TableRow>
+	<TableRow>
+    	<TextView android:layout_column="0" android:padding="3dip" android:text="Altitude" />
+		<TextView android:text="@+id/textAltitude" android:layout_height="wrap_content" android:id="@+id/textAltitude"></TextView>
+	</TableRow>
+	<TableRow>
+    	<TextView android:layout_column="0" android:padding="3dip" android:text="Accuracy" />
+		<TextView android:text="@+id/textAccuracy" android:layout_height="wrap_content" android:id="@+id/textAccuracy"></TextView>
+	</TableRow>
+	<TableRow>
+    	<TextView android:layout_column="0" android:padding="3dip" android:text="Points in Queue" />
+		<TextView android:layout_width="wrap_content" android:text="@+id/textNumPointsInQueue" android:layout_height="wrap_content" android:id="@+id/textNumPointsInQueue"></TextView>
+	</TableRow>
+	<TableRow>
+    	<TextView android:layout_column="0" android:padding="3dip" android:text="Last Sent" />
+		<TextView android:layout_width="wrap_content" android:text="@+id/textLastSent" android:layout_height="wrap_content" android:id="@+id/textLastSent"></TextView>
+	</TableRow>
+	<Button android:layout_span="2" android:gravity="center_horizontal" android:layout_height="wrap_content" android:id="@+id/buttonStart" android:text="Start" android:layout_marginTop="20dp"></Button>
+</TableLayout>
 
 </LinearLayout>

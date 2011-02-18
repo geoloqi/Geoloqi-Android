@@ -62,8 +62,10 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 			p.getString(PREF_SCOPE, null)
 		);
 	}
-	
+
 	public static void setToken(LQToken token, Context context) {
+		if(token == null)
+			return;
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 		Editor e = p.edit();
 		e.putString(PREF_ACCESS_TOKEN, token.accessToken);

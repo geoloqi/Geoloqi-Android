@@ -10,7 +10,7 @@
     <string name="rate_limit_preference">Rate Limit</string>
     <string name="summary_rate_limit_preference">Sets the interval at which the points are sent to the server.</string>
     <string-array name="entries_rate_limit_preference">
-    	<item>1 Second</item>
+    	<item>5 Seconds</item>
     	<item>10 Seconds</item>
     	<item>20 Seconds</item>
     	<item>30 Seconds</item>
@@ -22,7 +22,7 @@
     	<item>30 Minutes</item>
     </string-array>
 	<string-array name="entryvalues_rate_limit_preference">
-    	<item>1</item>
+    	<item>5</item>
     	<item>10</item>
     	<item>20</item>
     	<item>30</item>

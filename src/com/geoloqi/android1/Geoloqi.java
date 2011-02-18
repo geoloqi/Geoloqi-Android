@@ -1,6 +1,7 @@
 package com.geoloqi.android1;
 
 import java.text.DecimalFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -13,13 +14,9 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -37,7 +34,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
 	private Button buttonStart; // , buttonStop, buttonUpdate;
-	private TextView latLabel, lngLabel, numPointsLabel;
+	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel, accLabel, lastSentLabel;
 	protected LQLocationData db;
 	private Handler handler = new Handler();
 
@@ -47,12 +44,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 		setContentView(R.layout.main);
 
 		buttonStart = (Button) findViewById(R.id.buttonStart);
-		// buttonStop = (Button) findViewById(R.id.buttonStop);
-		// buttonUpdate = (Button) findViewById(R.id.buttonUpdate);
 		latLabel = (TextView) findViewById(R.id.textLatitude);
 		lngLabel = (TextView) findViewById(R.id.textLongitude);
+		altLabel = (TextView) findViewById(R.id.textAltitude);
+		spdLabel = (TextView) findViewById(R.id.textSpeed);
+		accLabel = (TextView) findViewById(R.id.textAccuracy);
 		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
-
+		lastSentLabel = (TextView) findViewById(R.id.textLastSent);
 		
 		buttonStart.setOnClickListener(this);
 		// buttonStop.setOnClickListener(this);
@@ -202,12 +200,22 @@ public class Geoloqi extends Activity implements OnClickListener {
 		// Runs with the return value of doInBackground, has access to the UI thread
 		@Override
 		protected void onPostExecute(LQPoint point) {
-			if(point== null)
+			if(point == null)
 				return;
-			
-			latLabel.setText("Lat: "+(new DecimalFormat("#.00000").format(point.latitude)));
-			lngLabel.setText("Lng: "+(new DecimalFormat("#.00000").format(point.longitude)));
-			numPointsLabel.setText("Points in Queue: "+db.numberOfUnsentPoints());
+
+			latLabel.setText((new DecimalFormat("#.00000").format(point.latitude)));
+			lngLabel.setText((new DecimalFormat("#.00000").format(point.longitude)));
+			altLabel.setText(""+point.altitude + "m");
+			spdLabel.setText(""+point.speed + " km/h");
+			accLabel.setText(""+point.horizontalAccuracy + "m");
+			numPointsLabel.setText(""+db.numberOfUnsentPoints());
+
+			Date lastSent = GeoloqiHTTPRequest.singleton().lastSent;
+			Log.i(Geoloqi.TAG, "+++++++++ " + lastSent);
+			if(lastSent == null)
+				return;
+		
+			lastSentLabel.setText(""+((System.currentTimeMillis()/1000) - lastSent.getTime()) + " seconds");
 		}		
 	}
 

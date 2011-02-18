@@ -10,8 +10,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -21,7 +19,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -33,7 +30,7 @@ public class GeoloqiService extends Service implements LocationListener {
 	LQLocationData db;
 	Date lastPointReceived;
 	Date lastPointSent;
-	float minDistance = 1.0f;
+	float minDistance = 0.0f;
 	long minTime = 1000l;
 	int rateLimit;
 	Timer sendingTimer;
@@ -75,8 +72,8 @@ public class GeoloqiService extends Service implements LocationListener {
 		Toast.makeText(this, "Geoloqi Tracker Started", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onStart");
 		
-		String bestProvider = locationManager.getBestProvider(new Criteria(), true);
-		locationManager.requestLocationUpdates(bestProvider, minTime, minDistance, this);
+		// String bestProvider = locationManager.getBestProvider(new Criteria(), true);
+		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
 		
 		// From http://developer.android.com/guide/topics/ui/notifiers/notifications.html
 		
@@ -98,13 +95,13 @@ public class GeoloqiService extends Service implements LocationListener {
 		// Pass the Notification to the NotificationManager
 		notificationManager.notify(GeoloqiService.NOTIFICATION_ID, notification);
 		
-		Log.d(TAG, "Provider: " + bestProvider);
+		// Log.d(TAG, "Provider: " + bestProvider);
 	}
 
 	public void onLocationChanged(Location location) {
 		Log.d(TAG, location.toString());
 		// Ignore points closer together than 1 second
-		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - 1000)
+		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - 2000)
 		{
 			// Ignore points worse than 600m accurate (super rough position appears to be about 1000m)
 			if(location.hasAccuracy() && location.getAccuracy() > 600)

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -15,8 +14,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -31,15 +28,23 @@ public class GeoloqiHTTPRequest {
 
 	private static GeoloqiHTTPRequest singleton;
 	private String urlBase = "https://api.geoloqi.com/1/";
+	public Date lastSent;
+	public int updateInProgress = 0;
 	
 	public static GeoloqiHTTPRequest singleton() {
-		if(singleton == null)
+		if(singleton == null) {
+			Log.i(Geoloqi.TAG, "}}}}}} Creating new HTTP Request");
 			singleton = new GeoloqiHTTPRequest();
-
+		}
 		return singleton;
 	}
 
 	public void locationUpdate(LQLocationData db, Context context) {
+		if(updateInProgress == 1){
+			Log.i(Geoloqi.TAG, "HTTP Request in progress, won't update this time");
+			return;
+		}
+		
 		Cursor cursor = db.getUnsentPoints();
 
 		// Loop through the cursor and format a JSON object
@@ -48,8 +53,10 @@ public class GeoloqiHTTPRequest {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US);
 		sdf.setTimeZone(Calendar.getInstance().getTimeZone());
 		
-		if(cursor == null)
+		if(cursor == null) {
+			updateInProgress = 0;
 			return;
+		}
 		
 		while(cursor.moveToNext()) {
 			try {
@@ -88,14 +95,17 @@ public class GeoloqiHTTPRequest {
 		
 		cursor.close();
 		
-		if(json.length() == 0)
+		if(json.length() == 0) {
+			updateInProgress = 0;
 			return;
+		}
 		
 		// Post the JSON object to the API
 		Log.d(Geoloqi.TAG, json.toString());
 		try {
 	        LQToken token = GeoloqiPreferences.getToken(context);
 	        if(token == null) {
+				updateInProgress = 0;
 	        	throw new Exception("No access token present. Won't attempt to send points.");
 	        }
 	        
@@ -125,24 +135,30 @@ public class GeoloqiHTTPRequest {
 	    				if(token != null) {
 	    					GeoloqiPreferences.setToken(token, context);
 	    					// Recurse!
+	    					updateInProgress = 0;
 	    					locationUpdate(db, context);
 	    					return;
 	    				}
 	            	} else {
+	        			updateInProgress = 0;
 		            	throw new Exception(response.get("error") + " " + response.get("error_description"));
 	            	}
 	            }
 
-	            Log.i(Geoloqi.TAG, responseString);
+	            Log.d(Geoloqi.TAG, "Completed. Deleting all sent points. " + responseString);
+	            this.lastSent = new Date();
 				db.clearSentPoints();
+				updateInProgress = 0;
             } else {
             	Log.i(Geoloqi.TAG, "Unknown error");
     			db.unmarkPointsForSending();
+    			updateInProgress = 0;
             }
 		} catch(Exception e) {
 			// Don't remove the points from the queue if the HTTP request failed
 			Log.i(Geoloqi.TAG, "Error sending points: " + e.getMessage());
 			db.unmarkPointsForSending();
+			updateInProgress = 0;
 		}
 	}
 	
