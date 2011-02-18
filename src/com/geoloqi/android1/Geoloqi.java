@@ -50,7 +50,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		spdLabel = (TextView) findViewById(R.id.textSpeed);
 		accLabel = (TextView) findViewById(R.id.textAccuracy);
 		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
-		lastSentLabel = (TextView) findViewById(R.id.textLastSent);
+		// lastSentLabel = (TextView) findViewById(R.id.textLastSent);
 		
 		buttonStart.setOnClickListener(this);
 		// buttonStop.setOnClickListener(this);
@@ -210,12 +210,12 @@ public class Geoloqi extends Activity implements OnClickListener {
 			accLabel.setText(""+point.horizontalAccuracy + "m");
 			numPointsLabel.setText(""+db.numberOfUnsentPoints());
 
-			Date lastSent = GeoloqiHTTPRequest.singleton().lastSent;
-			Log.i(Geoloqi.TAG, "+++++++++ " + lastSent);
-			if(lastSent == null)
-				return;
-		
-			lastSentLabel.setText(""+((System.currentTimeMillis()/1000) - lastSent.getTime()) + " seconds");
+			// TODO: Talk to the service to find out the date the last point was sent
+//			Date lastSent = ???
+//			if(lastSent == null)
+//				return;
+//		
+//			lastSentLabel.setText(""+((System.currentTimeMillis()/1000) - lastSent.getTime()) + " seconds");
 		}		
 	}
 

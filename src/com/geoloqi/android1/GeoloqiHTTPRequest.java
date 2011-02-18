@@ -33,7 +33,6 @@ public class GeoloqiHTTPRequest {
 	
 	public static GeoloqiHTTPRequest singleton() {
 		if(singleton == null) {
-			Log.i(Geoloqi.TAG, "}}}}}} Creating new HTTP Request");
 			singleton = new GeoloqiHTTPRequest();
 		}
 		return singleton;

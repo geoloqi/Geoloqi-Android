@@ -20,18 +20,17 @@ public final class R {
         public static final int ic_stat_notify=0x7f020002;
     }
     public static final class id {
-        public static final int buttonStart=0x7f08000c;
+        public static final int buttonStart=0x7f08000b;
         public static final int editTextEmail=0x7f080002;
         public static final int editTextPassword=0x7f080003;
         public static final int geoloqiLogo=0x7f080004;
-        public static final int login=0x7f08000e;
-        public static final int quit=0x7f08000f;
+        public static final int login=0x7f08000d;
+        public static final int quit=0x7f08000e;
         public static final int root=0x7f080000;
-        public static final int settings=0x7f08000d;
+        public static final int settings=0x7f08000c;
         public static final int textAccuracy=0x7f080009;
         public static final int textAltitude=0x7f080008;
         public static final int textEmail=0x7f080001;
-        public static final int textLastSent=0x7f08000b;
         public static final int textLatitude=0x7f080005;
         public static final int textLongitude=0x7f080006;
         public static final int textNumPointsInQueue=0x7f08000a;

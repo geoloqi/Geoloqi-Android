@@ -166,7 +166,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		@Override
 		protected void onPostExecute(Void v) {
 			// Log.d(TAG, "Flush queue completed");
-			
+			lastPointSent = GeoloqiHTTPRequest.singleton().lastSent;
 		}		
 	}
 	
