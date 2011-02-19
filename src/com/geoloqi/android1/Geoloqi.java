@@ -29,6 +29,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "Geoloqi";
@@ -131,18 +132,23 @@ public class Geoloqi extends Activity implements OnClickListener {
     	final EditText email = (EditText)layout.findViewById(R.id.editTextEmail);
     	final EditText pwd = (EditText)layout.findViewById(R.id.editTextPassword);
 
+    	final Context context = this;
+    	
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setView(layout);
     	builder.setTitle("Log In");
     	
     	builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				
 				LQToken token = GeoloqiHTTPRequest.singleton().oauthToken(email.getText().toString(), pwd.getText().toString());
-				GeoloqiPreferences.setToken(token, Geoloqi.this);
-				Log.d(Geoloqi.TAG, token.toString());
-				
 				Geoloqi.this.removeDialog(LOGIN_DIALOG_ID);
+				if(token == null) {
+					Toast.makeText(context, "Error logging in", Toast.LENGTH_LONG).show();
+				} else {
+					GeoloqiPreferences.setToken(token, Geoloqi.this);
+					Toast.makeText(context, "Logged in!", Toast.LENGTH_LONG).show();
+					Log.d(Geoloqi.TAG, "Got access token: " + token.toString());
+				}
 			}
 		});
 

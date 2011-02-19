@@ -1,5 +1,6 @@
 package com.geoloqi.android1;
 
+import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -133,7 +134,7 @@ public class GeoloqiService extends Service implements LocationListener {
 				locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
 			}
 			
-			CharSequence contentText = "" + (location.getSpeed() * 3.6) + " km/h, "
+			CharSequence contentText = "" + new DecimalFormat("#.0").format(location.getSpeed() * 3.6) + " km/h, "
 				+ db.numberOfUnsentPoints() + " points";
 			
 			// Define the Notification's expanded message and Intent

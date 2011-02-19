@@ -20,7 +20,7 @@
                android:entries="@array/entries_min_time_preference"
                android:entryValues="@array/entryvalues_min_time_preference"
                android:dialogTitle="@string/min_time_preference" 
-               android:defaultValue="300" />
+               android:defaultValue="5" />
                 
 	</PreferenceCategory>
 </PreferenceScreen>
