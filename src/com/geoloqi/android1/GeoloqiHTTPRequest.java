@@ -91,6 +91,7 @@ public class GeoloqiHTTPRequest {
 				
 			} catch(JSONException e) {
 				Log.d(Geoloqi.TAG, "Exception building JSON object!");
+				updateInProgress = 0;
 			}
 		}
 		

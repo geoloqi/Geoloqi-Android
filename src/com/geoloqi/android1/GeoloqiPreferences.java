@@ -49,7 +49,7 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 	
 	public static int getRateLimit(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
-		String rateLimit = p.getString(PREF_RATELIMIT_KEY, "300");
+		String rateLimit = p.getString(PREF_RATELIMIT_KEY, "120");
 		return Integer.parseInt(rateLimit);
 	}
 

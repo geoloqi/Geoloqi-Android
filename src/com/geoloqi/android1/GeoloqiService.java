@@ -65,7 +65,9 @@ public class GeoloqiService extends Service implements LocationListener {
 		
 		NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 		notificationManager.cancel(GeoloqiService.NOTIFICATION_ID);
-		Log.d(TAG, "Points: " + db.numberOfUnsentPoints());
+
+		// Flush the queue now
+		GeoloqiHTTPRequest.singleton().locationUpdate(db, GeoloqiService.this);
 	}
 	
 	@Override
