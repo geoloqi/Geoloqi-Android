@@ -159,6 +159,8 @@ public class Geoloqi extends Activity implements OnClickListener {
 					GeoloqiPreferences.setToken(token, Geoloqi.this);
 					Log.d(Geoloqi.TAG, "Got access token: " + token.toString());
 					Toast.makeText(context, "Logged in!", Toast.LENGTH_LONG).show();
+					username = null;
+					GeoloqiPreferences.setUsername(null, Geoloqi.this);
 					new LQGetUsername().execute();
 				}
 			}
