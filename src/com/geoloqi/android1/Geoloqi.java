@@ -35,12 +35,16 @@ public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
 	private Button buttonStart; // , buttonStop, buttonUpdate;
-	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel, accLabel, lastSentLabel;
+	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel, accLabel, lastSentLabel, accountLabel;
 	protected LQLocationData db;
 	private Handler handler = new Handler();
+	public Context context;
+	private String username;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		context = this;
+		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
@@ -51,6 +55,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		spdLabel = (TextView) findViewById(R.id.textSpeed);
 		accLabel = (TextView) findViewById(R.id.textAccuracy);
 		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
+		accountLabel = (TextView) findViewById(R.id.textAccount);
 		// lastSentLabel = (TextView) findViewById(R.id.textLastSent);
 		
 		buttonStart.setOnClickListener(this);
@@ -69,11 +74,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 		
 		ImageView image = (ImageView)findViewById(R.id.geoloqiLogo);
 		image.setImageResource(R.drawable.geoloqi_300x100);
+		new LQGetUsername().execute();
 	}
 
 	public void onResume() {
 		Log.i(TAG, "Resuming...");
 		super.onResume();
+		new LQGetUsername().execute();
 	}
 	
 	@Override
@@ -108,7 +115,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 		switch (src.getId()) {
 		case R.id.buttonStart:
 			if(!isServiceRunning()) {
-				Log.d(TAG, "onClick: starting service");
 				startService(new Intent(this, GeoloqiService.class));
 			} else {
 				stopService(new Intent(this, GeoloqiService.class));
@@ -132,8 +138,6 @@ public class Geoloqi extends Activity implements OnClickListener {
     	final EditText email = (EditText)layout.findViewById(R.id.editTextEmail);
     	final EditText pwd = (EditText)layout.findViewById(R.id.editTextPassword);
 
-    	final Context context = this;
-    	
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setView(layout);
     	builder.setTitle("Log In");
@@ -146,8 +150,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 					Toast.makeText(context, "Error logging in", Toast.LENGTH_LONG).show();
 				} else {
 					GeoloqiPreferences.setToken(token, Geoloqi.this);
-					Toast.makeText(context, "Logged in!", Toast.LENGTH_LONG).show();
 					Log.d(Geoloqi.TAG, "Got access token: " + token.toString());
+					Toast.makeText(context, "Logged in!", Toast.LENGTH_LONG).show();
+					new LQGetUsername().execute();
 				}
 			}
 		});
@@ -195,7 +200,34 @@ public class Geoloqi extends Activity implements OnClickListener {
 	    }
 	    return isServiceFound;
 	}
-		
+
+	
+	class LQGetUsername extends AsyncTask<Void, Void, String> {
+		// Doesn't have access to the UI thread
+		@Override
+		protected String doInBackground(Void... v) {
+			// Attempt to retrieve the username from the preferences
+			String storedUsername = GeoloqiPreferences.getUsername(context);
+			// If it's not there, then make a server call to get the username
+			if(storedUsername == null) {
+				storedUsername = GeoloqiHTTPRequest.singleton().accountUsername(context);
+				GeoloqiPreferences.setUsername(storedUsername, context);
+				Log.d(TAG, "++++ Got new username from server: " + storedUsername);
+			}
+			return storedUsername;
+		}
+
+		protected void onProgressUpdate() {
+
+		}
+
+		// Runs with the return value of doInBackground, has access to the UI thread
+		@Override
+		protected void onPostExecute(String newUsername) {
+			username = newUsername;
+		}		
+	}
+
 	class LQUpdateUI extends AsyncTask<Void, Void, LQPoint> {
 
 		// Doesn't have access to the UI thread
@@ -220,6 +252,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 			spdLabel.setText(""+point.speed + " km/h");
 			accLabel.setText(""+point.horizontalAccuracy + "m");
 			numPointsLabel.setText(""+db.numberOfUnsentPoints());
+
+			if(username == null || username == "")
+				accountLabel.setText("");
+			else
+				accountLabel.setText(username);
 
 			// TODO: Talk to the service to find out the date the last point was sent
 //			Date lastSent = ???

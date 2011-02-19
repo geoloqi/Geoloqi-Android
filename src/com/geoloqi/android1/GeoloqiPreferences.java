@@ -14,6 +14,7 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 	private SharedPreferences preferences;
 	public static final String PREF_RATELIMIT_KEY = "rate_limit";
 	public static final String PREF_MINTIME_KEY = "min_time";
+	public static final String PREF_USERNAME = "username";
 	public static final String PREF_ACCESS_TOKEN = "access_token";
 	public static final String PREF_REFRESH_TOKEN = "refres_token";
 	public static final String PREF_EXPIRES_AT = "expires_at";
@@ -84,5 +85,17 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 		e.putString(PREF_SCOPE, token.scope);
 		e.commit();
 		Log.d(Geoloqi.TAG, "Stored token in shared preferences");
+	}
+	
+	public static String getUsername(Context context) {
+		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
+		return p.getString(PREF_USERNAME, null);
+	}
+
+	public static void setUsername(String username, Context context) {
+		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
+		Editor e = p.edit();
+		e.putString(PREF_USERNAME, username);
+		e.commit();
 	}
 }

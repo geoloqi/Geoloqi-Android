@@ -10,6 +10,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -103,7 +104,7 @@ public class GeoloqiHTTPRequest {
 		}
 		
 		// Post the JSON object to the API
-		Log.d(Geoloqi.TAG, json.toString());
+		// Log.d(Geoloqi.TAG, json.toString());
 		try {
 	        LQToken token = GeoloqiPreferences.getToken(context);
 	        if(token == null) {
@@ -161,6 +162,47 @@ public class GeoloqiHTTPRequest {
 			Log.i(Geoloqi.TAG, "Error sending points: " + e.getMessage());
 			db.unmarkPointsForSending();
 			updateInProgress = 0;
+		}
+	}
+
+	public String accountUsername(Context context) {
+
+		try {
+	        LQToken token = GeoloqiPreferences.getToken(context);
+	        if(token == null) {
+	        	throw new Exception("No access token present.");
+	        }
+	        
+			HttpClient client = new DefaultHttpClient();  
+	        String postURL = this.urlBase + "account/username";
+	        HttpGet request = new HttpGet(postURL); 
+	        request.setHeader("Authorization", "OAuth " + token.accessToken);
+
+            HttpResponse responsePOST = client.execute(request);
+            HttpEntity resEntity = responsePOST.getEntity();
+            if (resEntity != null) {    
+	        	String responseString = EntityUtils.toString(resEntity);
+	            JSONObject response = new JSONObject(responseString);
+
+	            if(response.has("error")) {
+	            	// If the error was because of an expired token, give up :)
+	            	if(response.getString("error").equals("expired_token")) {
+    					throw new Exception("Expired token");
+	            	} else {
+	            		throw new Exception("Unknown error: " + response.getString("error"));
+	            	}
+	            }
+	            else if(response.has("username")) {
+	            	return response.getString("username");
+	            }
+	            else {
+	            	throw new Exception("Unknown response: " + responseString);
+	            }
+            } else {
+            	throw new Exception("Empty response");
+            }
+		} catch(Exception e) {
+			return null;
 		}
 	}
 	
