@@ -137,10 +137,17 @@ public class Geoloqi extends Activity implements OnClickListener {
     	
     	final EditText email = (EditText)layout.findViewById(R.id.editTextEmail);
     	final EditText pwd = (EditText)layout.findViewById(R.id.editTextPassword);
+    	TextView account = (TextView)layout.findViewById(R.id.textAccount);
 
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setView(layout);
-    	builder.setTitle("Log In");
+
+    	if(username != null) {
+    		account.setText("Currently logged in as " + username);
+    		builder.setTitle("Change Account");
+    	} else {
+    		builder.setTitle("Log In");
+    	}
     	
     	builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
@@ -183,17 +190,8 @@ public class Geoloqi extends Activity implements OnClickListener {
 	    boolean isServiceFound = false;
 	
 	    for (int i = 0; i < services.size(); i++) {
-	        //Log.d(Global.TAG, "Service Nr. " + i + " :" + services.get(i).service);
-	        //Log.d(Global.TAG, "Service Nr. " + i + " package name : " + services.get(i).service.getPackageName());
-	        //Log.d(Geoloqi.TAG, "Service Nr. " + i + " class name : " + services.get(i).service.getClassName());
-	
 	        if("com.geoloqi.android1".equals(services.get(i).service.getPackageName())) {
-	            //Log.d(Geoloqi.TAG, "packagename matches");
-	            // Log.d(LOG_TAG, "SpotService" + " : " +
-	            // services.get(i).service.getClassName());
-	
 	            if("com.geoloqi.android1.GeoloqiService".equals(services.get(i).service.getClassName())) {
-	                // Log.d(Geoloqi.TAG, "getClassName matches");
 	                isServiceFound = true;
 	            }
 	        }
@@ -212,7 +210,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 			if(storedUsername == null) {
 				storedUsername = GeoloqiHTTPRequest.singleton().accountUsername(context);
 				GeoloqiPreferences.setUsername(storedUsername, context);
-				Log.d(TAG, "++++ Got new username from server: " + storedUsername);
 			}
 			return storedUsername;
 		}

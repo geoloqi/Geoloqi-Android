@@ -8,6 +8,13 @@
   android:padding="5dip">
 
 	<TextView 
+		android:text="" 
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content" 
+		android:id="@+id/textAccount" 
+		android:layout_marginBottom="5dip" />
+
+	<TextView 
 		android:text="Email or Username" 
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content" 
