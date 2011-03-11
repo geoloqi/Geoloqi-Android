@@ -77,7 +77,7 @@ public class LQLocationData extends SQLiteOpenHelper {
 	
 	public int numberOfUnsentPoints() {
 		SQLiteDatabase db = this.getReadableDatabase();
-		Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM lqLocationData WHERE sent = 0", null);
+		Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM lqLocationData WHERE sent != 1", null);
 		int unsentPoints = 0;
 		while(cursor.moveToNext()) {
 			unsentPoints = cursor.getInt(0);
@@ -122,10 +122,10 @@ public class LQLocationData extends SQLiteOpenHelper {
 
 	public Cursor getUnsentPoints() {
 		SQLiteDatabase db = this.getWritableDatabase();
-		// Mark all points for sending
-		db.execSQL("UPDATE lqLocationData SET sent = 1 WHERE sent = 0");
+		// Mark points for sending
+		db.execSQL("UPDATE lqLocationData SET sent = 1 WHERE id IN (SELECT id FROM lqLocationData WHERE sent = 0 ORDER BY date ASC LIMIT 100)");
 		// Retrieve a cursor with these points
-		Cursor cursor = db.rawQuery("SELECT * FROM lqLocationData WHERE sent = 1 ORDER BY date DESC", null);
+		Cursor cursor = db.rawQuery("SELECT * FROM lqLocationData WHERE sent = 1 ORDER BY date ASC", null);
 		return cursor;
 	}
 

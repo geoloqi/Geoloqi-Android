@@ -83,7 +83,7 @@ public class GeoloqiHTTPRequest {
 				update.put("raw", raw);
 				JSONObject client = new JSONObject();
 					client.put("name", "Geoloqi");
-					client.put("version", "11.044");
+					client.put("version", "11.069");
 					client.put("platform", "Android");
 					client.put("hardware", "unknown");
 				update.put("client", client);
@@ -102,6 +102,8 @@ public class GeoloqiHTTPRequest {
 			updateInProgress = 0;
 			return;
 		}
+		
+		Log.d(Geoloqi.TAG, "Will attempt to send " + json.length() + " points");
 		
 		// Post the JSON object to the API
 		// Log.d(Geoloqi.TAG, json.toString());
