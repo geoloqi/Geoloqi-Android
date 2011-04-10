@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
+import android.util.Log;
 
 public class LQLocationData extends SQLiteOpenHelper {
 
@@ -57,7 +58,7 @@ public class LQLocationData extends SQLiteOpenHelper {
 		}
 	}
 
-	public void addLocation(Location location, float distanceFilter, long trackingLimit, int rateLimit) {
+	public void addLocation(Location location, float distanceFilter, long trackingLimit, int rateLimit, int battery) {
 		SQLiteDatabase db = this.getWritableDatabase();
 		ContentValues values = new ContentValues();
 		values.put(DATE, (int)(System.currentTimeMillis() / 1000));
@@ -71,7 +72,8 @@ public class LQLocationData extends SQLiteOpenHelper {
 		values.put(DISTANCE_FILTER, distanceFilter);
 		values.put(TRACKING_LIMIT, trackingLimit);
 		values.put(RATE_LIMIT, rateLimit);
-		values.put(BATTERY,0);
+		values.put(BATTERY, battery);
+		Log.i(Geoloqi.TAG, "Battery level is: "+battery);
 		db.insertOrThrow("lqLocationData", null, values);
 	}
 	

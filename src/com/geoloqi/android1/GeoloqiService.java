@@ -9,8 +9,10 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -37,6 +39,8 @@ public class GeoloqiService extends Service implements LocationListener {
 	int rateLimit;
 	Timer sendingTimer;
 	private Handler handler = new Handler();
+	private int lastBatteryLevel;
+	BatteryReceiver batteryReceiver;
 	
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -54,6 +58,9 @@ public class GeoloqiService extends Service implements LocationListener {
 		rateLimit = GeoloqiPreferences.getRateLimit(this);
 		sendingTimer = new Timer();
 		sendingTimer.schedule(new LQSendingTimerTask(), 0, rateLimit * 1000);
+
+		batteryReceiver = new BatteryReceiver();
+		registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 	}
 
 	@Override
@@ -115,7 +122,7 @@ public class GeoloqiService extends Service implements LocationListener {
 				return;
 			
 			lastPointReceived = new Date();
-			db.addLocation(location, minDistance, minTime, rateLimit);
+			db.addLocation(location, minDistance, minTime, rateLimit, lastBatteryLevel);
 
 			// If the user has changed the rate limit, reset the timer
 			int newRateLimit = GeoloqiPreferences.getRateLimit(this);
@@ -215,4 +222,10 @@ public class GeoloqiService extends Service implements LocationListener {
 		}
 	}
 	
+	private class BatteryReceiver extends BroadcastReceiver {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			lastBatteryLevel = intent.getIntExtra("level", 0);
+		}
+	};
 }

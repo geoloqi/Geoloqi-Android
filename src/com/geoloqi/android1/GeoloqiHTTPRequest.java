@@ -78,12 +78,12 @@ public class GeoloqiHTTPRequest {
 					location.put("position", point);
 				update.put("location", location);
 				JSONObject raw = new JSONObject();
-					raw.put("battery", "");
+					raw.put("battery", cursor.getInt(cursor.getColumnIndex(LQLocationData.BATTERY)));
 					raw.put("rate_limit", cursor.getInt(cursor.getColumnIndex(LQLocationData.RATE_LIMIT)));
 				update.put("raw", raw);
 				JSONObject client = new JSONObject();
 					client.put("name", "Geoloqi");
-					client.put("version", "11.069");
+					client.put("version", "11.100");
 					client.put("platform", "Android");
 					client.put("hardware", "unknown");
 				update.put("client", client);
