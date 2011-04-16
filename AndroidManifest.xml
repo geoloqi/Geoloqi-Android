@@ -15,6 +15,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".GeoloqiLayerCatalog"
+                  android:label="@string/layerCatalog">
+        </activity>
         <activity android:name=".GeoloqiPreferences"
                   android:label="@string/preferences">
         </activity>

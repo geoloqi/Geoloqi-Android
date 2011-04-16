@@ -34,7 +34,7 @@ import android.widget.Toast;
 public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
-	private Button buttonStart; // , buttonStop, buttonUpdate;
+	private Button buttonStart, buttonLayerCatalog; // , buttonStop, buttonUpdate;
 	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel, accLabel, lastSentLabel, accountLabel;
 	protected LQLocationData db;
 	private Handler handler = new Handler();
@@ -49,6 +49,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		setContentView(R.layout.main);
 
 		buttonStart = (Button) findViewById(R.id.buttonStart);
+		buttonLayerCatalog = (Button) findViewById(R.id.buttonLayerCatalog);
 		latLabel = (TextView) findViewById(R.id.textLatitude);
 		lngLabel = (TextView) findViewById(R.id.textLongitude);
 		altLabel = (TextView) findViewById(R.id.textAltitude);
@@ -59,6 +60,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		// lastSentLabel = (TextView) findViewById(R.id.textLastSent);
 		
 		buttonStart.setOnClickListener(this);
+		buttonLayerCatalog.setOnClickListener(this);
 		// buttonStop.setOnClickListener(this);
 		// buttonUpdate.setOnClickListener(this);
 
@@ -119,6 +121,10 @@ public class Geoloqi extends Activity implements OnClickListener {
 			} else {
 				stopService(new Intent(this, GeoloqiService.class));
 			}
+			break;
+		case R.id.buttonLayerCatalog:
+			Intent layerCatalog = new Intent(this, GeoloqiLayerCatalog.class);
+			startActivity(layerCatalog);
 			break;
 //		case R.id.buttonStop:
 //			Log.d(TAG, "onClick: stopping service");

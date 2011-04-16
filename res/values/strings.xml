@@ -4,6 +4,7 @@
     <string name="quit">Exit</string>
     <string name="sending">Sending points to the server!</string>
     <string name="preferences">Preferences</string>
+    <string name="layerCatalog">Layer Catalog</string>
 
 	<!-- Preferences -->
     <string name="tracking_settings">Tracking Settings</string>
