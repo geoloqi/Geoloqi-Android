@@ -41,7 +41,8 @@
 		android:inputType="textPassword" />
 
 	<TextView 
-		android:autoLink="Visit beta.geoloqi.com to create an account"
+		android:autoLink="web"
+		android:text="Visit beta.geoloqi.com to create an account"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content" />
 
