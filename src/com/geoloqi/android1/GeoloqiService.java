@@ -69,6 +69,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		Log.d(TAG, "onDestroy");
 		
 		locationManager.removeUpdates(this);
+		unregisterReceiver(batteryReceiver);
 		sendingTimer.cancel();
 		
 		NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
@@ -115,7 +116,7 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onLocationChanged(Location location) {
 		Log.d(TAG, location.toString());
 		// Ignore points closer together than 1 second
-		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - 2000)
+		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - 1000)
 		{
 			// Ignore points worse than 600m accurate (super rough position appears to be about 1000m)
 			if(location.hasAccuracy() && location.getAccuracy() > 600)
