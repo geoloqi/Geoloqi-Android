@@ -50,7 +50,16 @@
 		<Button android:layout_width="wrap_content" android:layout_marginTop="20dp" android:id="@+id/buttonStart" android:text="Start"></Button>
 		<Button android:layout_width="wrap_content" android:layout_marginTop="20dp" android:id="@+id/buttonLayerCatalog" android:text="Layers"></Button>
 	</TableRow>
+	<TableRow>
+		<TextView android:id="@+id/textNotLoggedIn"
+		  android:padding="6dip"
+		  android:layout_gravity="center"
+		  android:layout_span="2"
+		  android:layout_width="fill_parent" 
+		  android:layout_height="wrap_content"
+		  android:text="Visit beta.geoloqi.com to set up your account" 
+		  android:autoLink="web" />
+	</TableRow>
 </TableLayout>
-
 
 </LinearLayout>

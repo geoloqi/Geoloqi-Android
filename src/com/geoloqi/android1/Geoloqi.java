@@ -35,7 +35,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
 	private Button buttonStart, buttonLayerCatalog; // , buttonStop, buttonUpdate;
-	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel, accLabel, lastSentLabel, accountLabel;
+	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel, accLabel, lastSentLabel, accountLabel, textNotLoggedIn;
 	protected LQLocationData db;
 	private Handler handler = new Handler();
 	public Context context;
@@ -59,6 +59,8 @@ public class Geoloqi extends Activity implements OnClickListener {
 		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
 		accountLabel = (TextView) findViewById(R.id.textAccount);
 		// lastSentLabel = (TextView) findViewById(R.id.textLastSent);
+		textNotLoggedIn = (TextView) findViewById(R.id.textNotLoggedIn);
+		textNotLoggedIn.setVisibility(View.INVISIBLE);
 		
 		buttonStart.setOnClickListener(this);
 		buttonLayerCatalog.setOnClickListener(this);
@@ -231,6 +233,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 		@Override
 		protected void onPostExecute(String newUsername) {
 			username = newUsername;
+			if(username == null || username.equals("")) {
+				accountLabel.setText("");
+				buttonLayerCatalog.setVisibility(View.INVISIBLE);
+			} else {
+				accountLabel.setText(username);
+				buttonLayerCatalog.setVisibility(View.VISIBLE);
+			}
 		}		
 	}
 
@@ -259,12 +268,14 @@ public class Geoloqi extends Activity implements OnClickListener {
 			accLabel.setText(""+point.horizontalAccuracy + "m");
 			numPointsLabel.setText(""+db.numberOfUnsentPoints());
 
-			if(username == null || username == "") {
+			if(username == null || username.equals("")) {
 				accountLabel.setText("");
 				buttonLayerCatalog.setVisibility(View.INVISIBLE);
+				textNotLoggedIn.setVisibility(View.VISIBLE);
 			} else {
 				accountLabel.setText(username);
 				buttonLayerCatalog.setVisibility(View.VISIBLE);
+				textNotLoggedIn.setVisibility(View.INVISIBLE);
 			}
 
 			// TODO: Talk to the service to find out the date the last point was sent
