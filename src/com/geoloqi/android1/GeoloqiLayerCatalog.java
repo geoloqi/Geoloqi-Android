@@ -9,11 +9,14 @@ import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 public class GeoloqiLayerCatalog extends Activity {
 	
 	private static GeoloqiLayerCatalog layerCatalog;
 	private SharedPreferences preferences;
+	private WebView webView;
 	
 	public static GeoloqiLayerCatalog singleton() {
 		if(layerCatalog == null)
@@ -25,21 +28,10 @@ public class GeoloqiLayerCatalog extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setContentView(R.layout.layer_catalog);
 		preferences = PreferenceManager.getDefaultSharedPreferences(this);
+		
+		webView = (WebView)findViewById(R.id.webView);
+		webView.loadUrl("https://a.geoloqi.com/layer/list?oauth_token=" + GeoloqiPreferences.getToken(this).accessToken);
 	}
-	
-	public static LQToken getToken(Context context) {
-		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
-
-		if(p.getString(GeoloqiPreferences.PREF_ACCESS_TOKEN, null) == null)
-			return null;
-
-		return new LQToken(
-			p.getString(GeoloqiPreferences.PREF_ACCESS_TOKEN, null),
-			p.getString(GeoloqiPreferences.PREF_REFRESH_TOKEN, null),
-			p.getLong(GeoloqiPreferences.PREF_EXPIRES_AT, 0),
-			p.getString(GeoloqiPreferences.PREF_SCOPE, null)
-		);
-	}
-
 }

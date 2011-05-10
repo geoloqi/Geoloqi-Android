@@ -3,6 +3,12 @@ functionality in place. We will be updating this app frequently, and if you'd li
 out adding a feature to the app, please fork this repository and send a pull request. Please 
 also read our developer wiki at http://geoloqi.org for more information.
 
+Setup
+=====
+
+Copy GeoloqiConstantsTemplate.java to GeoloqiConstants.java and fill in your app's id and secret.
+See http://geoloqi.org/API for more information.
+
 
 License
 =======
@@ -10,4 +16,3 @@ License
 Copyright 2011 by Geoloqi.com and contributors.
 
 See LICENSE
-

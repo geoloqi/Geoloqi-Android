@@ -83,7 +83,7 @@ public class GeoloqiHTTPRequest {
 				update.put("raw", raw);
 				JSONObject client = new JSONObject();
 					client.put("name", "Geoloqi");
-					client.put("version", "11.105");
+					client.put("version", "11.130");
 					client.put("platform", "Android");
 					client.put("hardware", "unknown");
 				update.put("client", client);
