@@ -50,6 +50,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		buttonStart = (Button) findViewById(R.id.buttonStart);
 		buttonLayerCatalog = (Button) findViewById(R.id.buttonLayerCatalog);
+		buttonLayerCatalog.setVisibility(View.INVISIBLE);
 		latLabel = (TextView) findViewById(R.id.textLatitude);
 		lngLabel = (TextView) findViewById(R.id.textLongitude);
 		altLabel = (TextView) findViewById(R.id.textAltitude);
@@ -258,10 +259,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 			accLabel.setText(""+point.horizontalAccuracy + "m");
 			numPointsLabel.setText(""+db.numberOfUnsentPoints());
 
-			if(username == null || username == "")
+			if(username == null || username == "") {
 				accountLabel.setText("");
-			else
+				buttonLayerCatalog.setVisibility(View.INVISIBLE);
+			} else {
 				accountLabel.setText(username);
+				buttonLayerCatalog.setVisibility(View.VISIBLE);
+			}
 
 			// TODO: Talk to the service to find out the date the last point was sent
 //			Date lastSent = ???
