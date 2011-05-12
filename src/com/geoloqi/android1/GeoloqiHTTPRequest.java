@@ -27,6 +27,7 @@ import android.util.Log;
 
 public class GeoloqiHTTPRequest {
 
+	private static String VERSION = "11.132";
 	private static GeoloqiHTTPRequest singleton;
 	private String urlBase = "https://api.geoloqi.com/1/";
 	public Date lastSent;
@@ -83,7 +84,7 @@ public class GeoloqiHTTPRequest {
 				update.put("raw", raw);
 				JSONObject client = new JSONObject();
 					client.put("name", "Geoloqi");
-					client.put("version", "11.131");
+					client.put("version", VERSION);
 					client.put("platform", "Android");
 					client.put("hardware", "unknown");
 				update.put("client", client);

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
@@ -163,6 +165,12 @@ public class Geoloqi extends Activity implements OnClickListener {
     	} else {
     		builder.setTitle("Log In");
     	}
+		Account[] accounts = AccountManager.get(this).getAccounts();
+		for (Account acct : accounts) {
+			if(acct.name.matches(".+@.+..+")) {
+				email.setText(acct.name);
+			}
+		}
     	
     	builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
@@ -201,6 +209,13 @@ public class Geoloqi extends Activity implements OnClickListener {
     	builder.setView(layout);
 
 		builder.setTitle("Create Your Account");
+		
+		Account[] accounts = AccountManager.get(this).getAccounts();
+		for (Account account : accounts) {
+			if(account.name.matches(".+@.+..+")) {
+				email.setText(account.name);
+			}
+		}
     	
     	builder.setPositiveButton("Sign Up", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
