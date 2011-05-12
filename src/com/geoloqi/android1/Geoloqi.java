@@ -34,7 +34,8 @@ import android.widget.Toast;
 public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
-	private Button buttonStart, buttonLayerCatalog; // , buttonStop, buttonUpdate;
+	private static final int SIGNUP_DIALOG_ID = 2;
+	private Button buttonStart, buttonLayerCatalog, buttonSignup; // , buttonStop, buttonUpdate;
 	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel, accLabel, lastSentLabel, accountLabel, textNotLoggedIn;
 	protected LQLocationData db;
 	private Handler handler = new Handler();
@@ -49,6 +50,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		setContentView(R.layout.main);
 
 		buttonStart = (Button) findViewById(R.id.buttonStart);
+		buttonSignup = (Button) findViewById(R.id.buttonSignup);
 		buttonLayerCatalog = (Button) findViewById(R.id.buttonLayerCatalog);
 		buttonLayerCatalog.setVisibility(View.INVISIBLE);
 		latLabel = (TextView) findViewById(R.id.textLatitude);
@@ -63,6 +65,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		textNotLoggedIn.setVisibility(View.INVISIBLE);
 		
 		buttonStart.setOnClickListener(this);
+		buttonSignup.setOnClickListener(this);
 		buttonLayerCatalog.setOnClickListener(this);
 		// buttonStop.setOnClickListener(this);
 		// buttonUpdate.setOnClickListener(this);
@@ -115,7 +118,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	        return super.onOptionsItemSelected(item);
 	    }
 	}
-
+ 
 	public void onClick(View src) {
 		switch (src.getId()) {
 		case R.id.buttonStart:
@@ -128,6 +131,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 		case R.id.buttonLayerCatalog:
 			Intent layerCatalog = new Intent(this, GeoloqiLayerCatalog.class);
 			startActivity(layerCatalog);
+			break;
+		case R.id.buttonSignup:
+	    	this.showDialog(SIGNUP_DIALOG_ID);
 			break;
 //		case R.id.buttonStop:
 //			Log.d(TAG, "onClick: stopping service");
@@ -183,12 +189,52 @@ public class Geoloqi extends Activity implements OnClickListener {
 
     	return builder.create();
 	}
+
+	private AlertDialog buildSignupDialog() {
+    	LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    	final View layout = inflater.inflate(R.layout.signup_dialog, (ViewGroup)findViewById(R.id.root));
+    	
+    	final EditText email = (EditText)layout.findViewById(R.id.editTextEmail);
+    	final EditText name = (EditText)layout.findViewById(R.id.editTextName);
+
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setView(layout);
+
+		builder.setTitle("Create Your Account");
+    	
+    	builder.setPositiveButton("Sign Up", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				LQToken token = GeoloqiHTTPRequest.singleton().createUser(email.getText().toString(), name.getText().toString());
+				Geoloqi.this.removeDialog(SIGNUP_DIALOG_ID);
+				if(token == null) {
+					Toast.makeText(context, "Error signing up", Toast.LENGTH_LONG).show();
+				} else {
+					GeoloqiPreferences.setToken(token, Geoloqi.this);
+					Log.d(Geoloqi.TAG, "Got access token: " + token.toString());
+					Toast.makeText(context, "Success! Check your email!", Toast.LENGTH_LONG).show();
+					username = null;
+					GeoloqiPreferences.setUsername(null, Geoloqi.this);
+					new LQGetUsername().execute();
+				}
+			}
+		});
+
+    	builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				Geoloqi.this.removeDialog(SIGNUP_DIALOG_ID);
+			}
+		});
+
+    	return builder.create();
+	}
 	
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		switch(id) {
 			case LOGIN_DIALOG_ID:
 				return buildLoginDialog();
+			case SIGNUP_DIALOG_ID:
+				return buildSignupDialog();
 			default:
 				return null;
 		}
@@ -218,9 +264,10 @@ public class Geoloqi extends Activity implements OnClickListener {
 			// Attempt to retrieve the username from the preferences
 			String storedUsername = GeoloqiPreferences.getUsername(context);
 			// If it's not there, then make a server call to get the username
-			if(storedUsername == null) {
+			if(storedUsername == null || storedUsername.equals("") || storedUsername.equals("(anonymous)")) {
 				storedUsername = GeoloqiHTTPRequest.singleton().accountUsername(context);
 				GeoloqiPreferences.setUsername(storedUsername, context);
+				Log.i(TAG, ">>> got new username! " + storedUsername);
 			}
 			return storedUsername;
 		}
@@ -233,12 +280,16 @@ public class Geoloqi extends Activity implements OnClickListener {
 		@Override
 		protected void onPostExecute(String newUsername) {
 			username = newUsername;
-			if(username == null || username.equals("")) {
-				accountLabel.setText("");
+			if(username == null || username.equals("(anonymous)")) {
+				accountLabel.setText("(not logged in)");
 				buttonLayerCatalog.setVisibility(View.INVISIBLE);
+				textNotLoggedIn.setVisibility(View.VISIBLE);
+				buttonSignup.setVisibility(View.VISIBLE);
 			} else {
 				accountLabel.setText(username);
 				buttonLayerCatalog.setVisibility(View.VISIBLE);
+				textNotLoggedIn.setVisibility(View.INVISIBLE);
+				buttonSignup.setVisibility(View.INVISIBLE);
 			}
 		}		
 	}
@@ -268,14 +319,16 @@ public class Geoloqi extends Activity implements OnClickListener {
 			accLabel.setText(""+point.horizontalAccuracy + "m");
 			numPointsLabel.setText(""+db.numberOfUnsentPoints());
 
-			if(username == null || username.equals("")) {
-				accountLabel.setText("");
+			if(username == null || username.equals("(anonymous)")) {
+				accountLabel.setText("(not logged in)");
 				buttonLayerCatalog.setVisibility(View.INVISIBLE);
 				textNotLoggedIn.setVisibility(View.VISIBLE);
+				buttonSignup.setVisibility(View.VISIBLE);
 			} else {
 				accountLabel.setText(username);
 				buttonLayerCatalog.setVisibility(View.VISIBLE);
 				textNotLoggedIn.setVisibility(View.INVISIBLE);
+				buttonSignup.setVisibility(View.INVISIBLE);
 			}
 
 			// TODO: Talk to the service to find out the date the last point was sent

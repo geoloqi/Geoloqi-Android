@@ -87,6 +87,16 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 		Log.d(Geoloqi.TAG, "Stored token in shared preferences");
 	}
 	
+	public static void removeToken(Context context) {
+		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
+		Editor e = p.edit();
+		e.putString(PREF_ACCESS_TOKEN, null);
+		e.putString(PREF_REFRESH_TOKEN, null);
+		e.putString(PREF_EXPIRES_AT, null);
+		e.putString(PREF_SCOPE, null);
+		e.commit();
+	}
+	
 	public static String getUsername(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 		return p.getString(PREF_USERNAME, null);

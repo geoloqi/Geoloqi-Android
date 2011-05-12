@@ -83,7 +83,7 @@ public class GeoloqiHTTPRequest {
 				update.put("raw", raw);
 				JSONObject client = new JSONObject();
 					client.put("name", "Geoloqi");
-					client.put("version", "11.130");
+					client.put("version", "11.131");
 					client.put("platform", "Android");
 					client.put("hardware", "unknown");
 				update.put("client", client);
@@ -176,7 +176,7 @@ public class GeoloqiHTTPRequest {
 	        }
 	        
 			HttpClient client = new DefaultHttpClient();  
-	        String postURL = this.urlBase + "account/username";
+	        String postURL = this.urlBase + "account/profile";
 	        HttpGet request = new HttpGet(postURL); 
 	        request.setHeader("Authorization", "OAuth " + token.accessToken);
 
@@ -186,6 +186,8 @@ public class GeoloqiHTTPRequest {
 	        	String responseString = EntityUtils.toString(resEntity);
 	            JSONObject response = new JSONObject(responseString);
 
+	            Log.i("Geoloqi", ">>> account/username response" + responseString);
+	            
 	            if(response.has("error")) {
 	            	// If the error was because of an expired token, give up :)
 	            	if(response.getString("error").equals("expired_token")) {
@@ -195,7 +197,17 @@ public class GeoloqiHTTPRequest {
 	            	}
 	            }
 	            else if(response.has("username")) {
-	            	return response.getString("username");
+	            	String username = response.getString("username");
+	            	if(username.startsWith("_")) {
+	            		if(response.has("email") && !response.getString("email").equals("")) {
+	            			return response.getString("email");
+	            		} else {
+	            			return "(anonymous)";
+	            		}
+	            	}
+	            	else {
+	            		return username;
+	            	}
 	            }
 	            else {
 	            	throw new Exception("Unknown response: " + responseString);
@@ -270,6 +282,45 @@ public class GeoloqiHTTPRequest {
 
 	            if(response.has("error"))
 	            	throw new Exception(response.get("error") + " " + response.get("error_description"));
+	            
+	            return new LQToken(
+	            			response.get("access_token").toString(), 
+	            			response.get("refresh_token").toString(), 
+	            			response.get("expires_in").toString(), 
+	            			response.get("scope").toString());
+	        } else {
+	        	Log.i(Geoloqi.TAG, "++++ Error getting token");
+	        }
+		} catch(Exception e) {
+			Log.i(Geoloqi.TAG, "Error getting token: " + e.toString());
+		}
+        return null;
+	}
+
+	public LQToken createUser(String email, String name) {
+		try {
+			HttpClient client = new DefaultHttpClient();  
+	        String postURL = this.urlBase + "user/create";
+	        HttpPost post = new HttpPost(postURL); 
+
+	        ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
+	        params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
+	        params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
+	        params.add(new BasicNameValuePair("email", email));
+	        params.add(new BasicNameValuePair("name", name));
+	        post.setEntity(new UrlEncodedFormEntity(params));
+
+	        HttpResponse responsePOST = client.execute(post);  
+	        HttpEntity resEntity = responsePOST.getEntity();  
+	        if (resEntity != null) {    
+	        	String responseString = EntityUtils.toString(resEntity);
+	            JSONObject response = new JSONObject(responseString);
+
+	            if(response.has("error"))
+	            {
+	            	// Handle friendly signup error messages here
+	            	throw new Exception(response.get("error") + " " + response.get("error_description"));
+	            }
 	            
 	            return new LQToken(
 	            			response.get("access_token").toString(), 

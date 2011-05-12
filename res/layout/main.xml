@@ -57,9 +57,13 @@
 		  android:layout_span="2"
 		  android:layout_width="fill_parent" 
 		  android:layout_height="wrap_content"
-		  android:text="Visit beta.geoloqi.com to set up your account" 
+		  android:text="Sign up using the button below" 
 		  android:autoLink="web" />
 	</TableRow>
+	<TableRow>
+		<Button android:layout_width="wrap_content" android:layout_marginTop="10dp" android:id="@+id/buttonSignup" android:text="Sign Up"></Button>
+	</TableRow>
+	
 </TableLayout>
 
 </LinearLayout>
