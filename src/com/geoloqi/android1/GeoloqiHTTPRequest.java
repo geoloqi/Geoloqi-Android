@@ -229,8 +229,8 @@ public class GeoloqiHTTPRequest {
 
 	        ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
 	        params.add(new BasicNameValuePair("grant_type", "password"));
-	        params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
-	        params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
+	        params.add(new BasicNameValuePair("client_id", GeoloqiConstantsTemplate.GEOLOQI_ID));
+	        params.add(new BasicNameValuePair("client_secret", GeoloqiConstantsTemplate.GEOLOQI_SECRET));
 	        params.add(new BasicNameValuePair("username", username));
 	        params.add(new BasicNameValuePair("password", password));
 	        post.setEntity(new UrlEncodedFormEntity(params));
@@ -269,8 +269,8 @@ public class GeoloqiHTTPRequest {
 
 	        ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
 	        params.add(new BasicNameValuePair("grant_type", "refresh_token"));
-	        params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
-	        params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
+	        params.add(new BasicNameValuePair("client_id", GeoloqiConstantsTemplate.GEOLOQI_ID));
+	        params.add(new BasicNameValuePair("client_secret", GeoloqiConstantsTemplate.GEOLOQI_SECRET));
 	        params.add(new BasicNameValuePair("refresh_token", refreshToken));
 	        post.setEntity(new UrlEncodedFormEntity(params));
 
