@@ -114,9 +114,11 @@ public class GeoloqiService extends Service implements LocationListener {
 	}
 
 	public void onLocationChanged(Location location) {
+		int newMinTime = GeoloqiPreferences.getMinTime(this);
 		Log.d(TAG, location.toString());
-		// Ignore points closer together than 1 second
-		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - 1000)
+		Log.d(TAG, "Min time: " + newMinTime);
+		// Ignore points closer together than minTime
+		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - newMinTime)
 		{
 			// Ignore points worse than 600m accurate (super rough position appears to be about 1000m)
 			if(location.hasAccuracy() && location.getAccuracy() > 600)
@@ -127,7 +129,6 @@ public class GeoloqiService extends Service implements LocationListener {
 
 			// If the user has changed the rate limit, reset the timer
 			int newRateLimit = GeoloqiPreferences.getRateLimit(this);
-			int newMinTime = GeoloqiPreferences.getMinTime(this);
 			if(newRateLimit != rateLimit) {
 				Log.i(Geoloqi.TAG, ">>> Restarting sending timer");
 				sendingTimer.cancel();

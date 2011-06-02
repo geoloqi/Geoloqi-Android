@@ -57,7 +57,7 @@ public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPr
 	public static int getMinTime(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 		String minTime = p.getString(PREF_MINTIME_KEY, "5");
-		return Integer.parseInt(minTime);
+		return Integer.parseInt(minTime) * 1000;
 	}
 
 	public static LQToken getToken(Context context) {
