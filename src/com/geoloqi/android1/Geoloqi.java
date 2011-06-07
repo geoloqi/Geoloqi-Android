@@ -18,6 +18,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -60,6 +61,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		
+		//Register the receiver
+		context.registerReceiver(receiver, new IntentFilter(Intent.ACTION_EDIT));
 
 		// Initialize GUI
 		buttonStart = (Button) findViewById(R.id.buttonStart);
