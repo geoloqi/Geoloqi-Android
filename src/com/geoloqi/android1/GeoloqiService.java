@@ -4,6 +4,8 @@ import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -16,7 +18,7 @@ import android.content.IntentFilter;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,19 +29,19 @@ import android.widget.Toast;
 public class GeoloqiService extends Service implements LocationListener {
 	private static final String TAG = "GeoloqiService";
 	private static final int NOTIFICATION_ID = 1024;
-	Notification notification;
-	MediaPlayer player;
-	LocationManager locationManager;
-	LQLocationData db;
-	Date lastPointReceived;
-	Date lastPointSent;
-	float minDistance = 0.0f;
-	long minTime = 1000l;
-	int rateLimit;
-	Timer sendingTimer;
+	private Notification notification;
+//	private MediaPlayer player;
+	private LocationManager locationManager;
+	private LQLocationData db;
+	private Date lastPointReceived;
+	protected Date lastPointSent;
+	private float minDistance = 0.0f;
+	private long minTime = 1000l;
+	private int rateLimit;
+	private Timer sendingTimer;
 	private Handler handler = new Handler();
 	private int lastBatteryLevel;
-	BatteryReceiver batteryReceiver;
+	private BatteryReceiver batteryReceiver;
 	
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -111,6 +113,36 @@ public class GeoloqiService extends Service implements LocationListener {
 		
 		// Log.d(TAG, "Provider: " + bestProvider);
 	}
+	
+	public static String encodeLocation(Location l){
+		// (latitude,longitude,altitude,bearing,speed,time,accuracy)
+		return "("+
+			l.getLatitude() + "," +
+			l.getLongitude() + "," + 
+			l.getAltitude() + "," +
+			l.getBearing() + "," +
+			l.getSpeed() + "," +
+			l.getTime() + "," +
+			l.getAccuracy() + ")";
+	}
+	
+	private static final Pattern pattern = Pattern.compile("\\((?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+),)(\\d+(?:\\.\\d+)?)\\)");
+	public static Location decodeLocation(String s) {
+		Matcher decoder = pattern.matcher(s);
+		if(decoder.matches()){
+			Location l = new Location("Geoloqi Service");
+			l.setLatitude(Float.parseFloat(decoder.group(1)));
+			l.setLongitude(Float.parseFloat(decoder.group(2)));
+			l.setAltitude(Float.parseFloat(decoder.group(3)));
+			l.setBearing(Float.parseFloat(decoder.group(4)));
+			l.setSpeed(Float.parseFloat(decoder.group(5)));
+			l.setTime(Long.parseLong(decoder.group(6)));
+			l.setAccuracy(Float.parseFloat(decoder.group(7)));
+			return l;
+		}else{
+			throw new RuntimeException("Tried to decode a malformed location.");
+		}
+	}
 
 	public void onLocationChanged(Location location) {
 		int newMinTime = GeoloqiPreferences.getMinTime(this);
@@ -119,15 +151,19 @@ public class GeoloqiService extends Service implements LocationListener {
 		// Ignore points closer together than minTime
 		if(lastPointReceived == null || lastPointReceived.getTime() < System.currentTimeMillis() - newMinTime)
 		{
-			// Ignore points worse than 600m accurate (super rough position appears to be about 1000m)
+			// If accuracy worse than 600 meters, do nothing.  (super rough position appears to be about 1000m)
 			if(location.hasAccuracy() && location.getAccuracy() > 600)
 				return;
+			// Accuracy is now better than 600 meters or the device cannot report the accuracy.
 			
+			// Record that this new point has been received.
 			lastPointReceived = new Date();
+			
+			//Store the location of the new point.
 			db.addLocation(location, minDistance, minTime, rateLimit, lastBatteryLevel);
 
 			// If the user has changed the rate limit, reset the timer
-			int newRateLimit = GeoloqiPreferences.getRateLimit(this);
+			int newRateLimit = GeoloqiPreferences.getRateLimit(this);			
 			if(newRateLimit != rateLimit) {
 				Log.i(Geoloqi.TAG, ">>> Restarting sending timer");
 				sendingTimer.cancel();
@@ -135,29 +171,40 @@ public class GeoloqiService extends Service implements LocationListener {
 				sendingTimer.schedule(new LQSendingTimerTask(), 0, newRateLimit * 1000);
 				rateLimit = newRateLimit;
 			}
+			// Timer is now correct.
+			
+			// If the user has changed the minimum time, reset the location update request interval.
 			if(newMinTime != minTime) {
 				Log.i(Geoloqi.TAG, ">>> Re-registering GPS updates");
 				minTime = newMinTime;
 				locationManager.removeUpdates(this);
 				locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
 			}
+			//  Location update request interval is now correct.
 			
-			CharSequence contentText = "" + new DecimalFormat("#.0").format(location.getSpeed() * 3.6) + " km/h, "
-				+ db.numberOfUnsentPoints() + " points";
-			
-			// Define the Notification's expanded message and Intent
+			//Get the application context
 			Context context = getApplicationContext();
+			
+			// Broadcast an intent to change the user's location.
+			Uri uri = (new Uri.Builder()).appendPath("location://").appendPath(encodeLocation(location)).build();
+			Intent updateLocation = new Intent(Intent.ACTION_EDIT, uri);
+			context.sendBroadcast(updateLocation);
+			// Intent to change the user's location is now broadcast.
+			
+			// Notify the user of their new location.
+			//// Define the Notification's expanded message and Intent
 			CharSequence contentTitle = "Geoloqi";
+			CharSequence contentText = "" + new DecimalFormat("#.0").format(location.getSpeed() * 3.6) + " km/h, " + db.numberOfUnsentPoints() + " points";
 			Intent notificationIntent = new Intent(this, Geoloqi.class);
 			PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 			notification.flags = Notification.FLAG_ONGOING_EVENT;
-			notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);		
+			notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);//FIXME This is deprecated.
 
-			// Get a reference to the notification manager
+			//// Get a reference to the notification manager
 			NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-			// Pass the Notification to the NotificationManager
+			//// Pass the Notification to the NotificationManager
 			notificationManager.notify(GeoloqiService.NOTIFICATION_ID, notification);
-			
+			// User is now notified of their location.
 		}
 	}
 
