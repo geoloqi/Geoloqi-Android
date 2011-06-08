@@ -1,18 +1,14 @@
 package com.geoloqi.android1;
 
 import java.text.DecimalFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.Semaphore;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.ActivityManager;
-import android.app.AlertDialog;
 import android.app.ActivityManager.RunningServiceInfo;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,6 +19,7 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PatternMatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -40,7 +37,7 @@ import android.widget.Toast;
 public class Geoloqi extends Activity implements OnClickListener {
 
 	// Broadcast Receiver for listening to the Geoloqi Service
-	private final LocationBroadcastReceiver receiver = new LocationBroadcastReceiver();
+	private static LocationBroadcastReceiver receiver;
 
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
@@ -48,13 +45,19 @@ public class Geoloqi extends Activity implements OnClickListener {
 	private Button buttonStart, buttonLayerCatalog, buttonSignup; // ,
 																	// buttonStop,
 																	// buttonUpdate;
+	@SuppressWarnings("unused")
 	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel,
 			accLabel, lastSentLabel, accountLabel, textNotLoggedIn;
 	protected LQLocationData db;
-	private Handler handler = new Handler();
+	@SuppressWarnings("unused")
+	private final Handler handler = new Handler();
 	public Context context;
 	private String username;
 
+	public static void log(String message){
+		Log.i("bpl29",message);
+	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		context = this;
@@ -63,7 +66,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 		setContentView(R.layout.main);
 		
 		//Register the receiver
-		context.registerReceiver(receiver, new IntentFilter(Intent.ACTION_EDIT));
+		log("Registering the receiver.");
+		receiver = new LocationBroadcastReceiver();
+		IntentFilter filter = new IntentFilter(Intent.ACTION_EDIT);
+		filter.addDataScheme("geo");
+		filter.addDataAuthority("geoloqi.com", null);
+		filter.addDataPath(".*", PatternMatcher.PATTERN_SIMPLE_GLOB);
+		context.registerReceiver(receiver, filter);
 
 		// Initialize GUI
 		buttonStart = (Button) findViewById(R.id.buttonStart);
@@ -106,7 +115,19 @@ public class Geoloqi extends Activity implements OnClickListener {
 		image.setImageResource(R.drawable.geoloqi_300x100);
 		new LQGetUsername().execute();
 	}
+	
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		log("Unregistering the receiver.");
+		context.unregisterReceiver(receiver);
+	}
 
+	@Override
+	public void onPause() {
+	}
+	
+	@Override
 	public void onResume() {
 		Log.i(TAG, "Resuming...");
 		super.onResume();
@@ -146,8 +167,10 @@ public class Geoloqi extends Activity implements OnClickListener {
 		case R.id.buttonStart:
 			if (!isServiceRunning()) {
 				startService(new Intent(this, GeoloqiService.class));
+				buttonStart.setText("Stop Tracking");
 			} else {
 				stopService(new Intent(this, GeoloqiService.class));
+				buttonStart.setText("Start Tracking");
 			}
 			break;
 		case R.id.buttonLayerCatalog:
@@ -296,21 +319,20 @@ public class Geoloqi extends Activity implements OnClickListener {
 	}
 
 	public boolean isServiceRunning() {
+		log("In isServiceRunning");
 		final ActivityManager activityManager = (ActivityManager) getSystemService(Geoloqi.ACTIVITY_SERVICE);
-		final List<RunningServiceInfo> services = activityManager
-				.getRunningServices(Integer.MAX_VALUE);
+		final List<RunningServiceInfo> services = activityManager.getRunningServices(Integer.MAX_VALUE);
 
 		boolean isServiceFound = false;
 
 		for (int i = 0; i < services.size(); i++) {
-			if ("com.geoloqi.android1".equals(services.get(i).service
-					.getPackageName())) {
-				if ("com.geoloqi.android1.GeoloqiService".equals(services
-						.get(i).service.getClassName())) {
+			if ("com.geoloqi.android1".equals(services.get(i).service.getPackageName())) {
+				if ("com.geoloqi.android1.GeoloqiService".equals(services.get(i).service.getClassName())) {
 					isServiceFound = true;
 				}
 			}
 		}
+		log("Leaving isServiceRunning");
 		return isServiceFound;
 	}
 
@@ -427,16 +449,12 @@ public class Geoloqi extends Activity implements OnClickListener {
 	private class LocationBroadcastReceiver extends BroadcastReceiver {
 
 		LocationBroadcastReceiver() {
+			super();
 		}
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			String data = intent.getData().toString();
-			if (data.startsWith("location://")) {
-				Location location = GeoloqiService.decodeLocation(data
-						.substring(11));
-				runOnUiThread(new UpdateUI(location));
-			}
+			runOnUiThread(new UpdateUI(Util.decodeLocation(intent.getData())));
 		}
 
 	}
@@ -444,20 +462,21 @@ public class Geoloqi extends Activity implements OnClickListener {
 	// WARNING: DO NOT RUN THIS OUTSIDE OF THE UI THREAD.
 	private class UpdateUI implements Runnable {
 
-		private Location location;
+		private final Location location;
 
 		UpdateUI(Location location) {
 			this.location = location;
 		}
 
 		public void run() {
+			log("Updating UI!");
 			latLabel.setText((new DecimalFormat("#.00000").format(location.getLatitude())));
 			lngLabel.setText((new DecimalFormat("#.00000").format(location.getLongitude())));
 			altLabel.setText("" + location.getAltitude() + "m");
 			spdLabel.setText("" + location.getSpeed() + " km/h");
 			accLabel.setText("" + location.getAccuracy() + "m");
 			numPointsLabel.setText("" + db.numberOfUnsentPoints());
-
+			
 			if (username == null || username.equals("(anonymous)")) {
 				accountLabel.setText("(not logged in)");
 				buttonLayerCatalog.setVisibility(View.INVISIBLE);

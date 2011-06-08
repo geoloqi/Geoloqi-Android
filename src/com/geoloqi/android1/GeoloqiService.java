@@ -4,8 +4,6 @@ import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -23,6 +21,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.PatternMatcher;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -30,16 +29,15 @@ public class GeoloqiService extends Service implements LocationListener {
 	private static final String TAG = "GeoloqiService";
 	private static final int NOTIFICATION_ID = 1024;
 	private Notification notification;
-//	private MediaPlayer player;
 	private LocationManager locationManager;
 	private LQLocationData db;
 	private Date lastPointReceived;
 	protected Date lastPointSent;
-	private float minDistance = 0.0f;
+	private final float minDistance = 0.0f;
 	private long minTime = 1000l;
 	private int rateLimit;
 	private Timer sendingTimer;
-	private Handler handler = new Handler();
+	private final Handler handler = new Handler();
 	private int lastBatteryLevel;
 	private BatteryReceiver batteryReceiver;
 	
@@ -51,7 +49,16 @@ public class GeoloqiService extends Service implements LocationListener {
 	@Override
 	public void onCreate() {
 		// Toast.makeText(this, "Geoloqi Tracker Created", Toast.LENGTH_LONG).show();
+		getApplicationContext().registerReceiver(new BroadcastReceiver(){
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				log("DATA: "+intent.getDataString());
+			}
+			
+		}, new IntentFilter());
+		
 		Log.d(TAG, "onCreate");
+		log("In GeoloqiService.onCreate()");
 		
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 		db = new LQLocationData(this);
@@ -62,12 +69,14 @@ public class GeoloqiService extends Service implements LocationListener {
 
 		batteryReceiver = new BatteryReceiver();
 		registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+		log("Leaving GeoloqiService.onCreate()");
 	}
 
 	@Override
 	public void onDestroy() {
 		Toast.makeText(this, "Geoloqi Tracker Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");
+		log("In GeoloqiService.onDestroy()");
 		
 		locationManager.removeUpdates(this);
 		unregisterReceiver(batteryReceiver);
@@ -78,12 +87,12 @@ public class GeoloqiService extends Service implements LocationListener {
 
 		// Flush the queue now
 		GeoloqiHTTPRequest.singleton().locationUpdate(db, GeoloqiService.this);
+		log("Leaving GeoloqiService.onDestroy()");
 	}
 	
 	@Override
 	public void onStart(Intent intent, int startid) {
 		Toast.makeText(this, "Geoloqi Tracker Started", Toast.LENGTH_LONG).show();
-		Log.d(TAG, "onStart");
 		
 		minTime = GeoloqiPreferences.getMinTime(this);
 
@@ -110,41 +119,10 @@ public class GeoloqiService extends Service implements LocationListener {
 
 		// Pass the Notification to the NotificationManager
 		notificationManager.notify(GeoloqiService.NOTIFICATION_ID, notification);
-		
-		// Log.d(TAG, "Provider: " + bestProvider);
-	}
-	
-	public static String encodeLocation(Location l){
-		// (latitude,longitude,altitude,bearing,speed,time,accuracy)
-		return "("+
-			l.getLatitude() + "," +
-			l.getLongitude() + "," + 
-			l.getAltitude() + "," +
-			l.getBearing() + "," +
-			l.getSpeed() + "," +
-			l.getTime() + "," +
-			l.getAccuracy() + ")";
-	}
-	
-	private static final Pattern pattern = Pattern.compile("\\((?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+(?:\\.\\d+)?),)(?:(\\d+),)(\\d+(?:\\.\\d+)?)\\)");
-	public static Location decodeLocation(String s) {
-		Matcher decoder = pattern.matcher(s);
-		if(decoder.matches()){
-			Location l = new Location("Geoloqi Service");
-			l.setLatitude(Float.parseFloat(decoder.group(1)));
-			l.setLongitude(Float.parseFloat(decoder.group(2)));
-			l.setAltitude(Float.parseFloat(decoder.group(3)));
-			l.setBearing(Float.parseFloat(decoder.group(4)));
-			l.setSpeed(Float.parseFloat(decoder.group(5)));
-			l.setTime(Long.parseLong(decoder.group(6)));
-			l.setAccuracy(Float.parseFloat(decoder.group(7)));
-			return l;
-		}else{
-			throw new RuntimeException("Tried to decode a malformed location.");
-		}
 	}
 
 	public void onLocationChanged(Location location) {
+		log("In GeoloqiService.onLocationChanged()");
 		int newMinTime = GeoloqiPreferences.getMinTime(this);
 		Log.d(TAG, location.toString());
 		Log.d(TAG, "Min time: " + newMinTime);
@@ -186,9 +164,24 @@ public class GeoloqiService extends Service implements LocationListener {
 			Context context = getApplicationContext();
 			
 			// Broadcast an intent to change the user's location.
-			Uri uri = (new Uri.Builder()).appendPath("location://").appendPath(encodeLocation(location)).build();
+			Uri uri = Util.encodeLocation(location);
 			Intent updateLocation = new Intent(Intent.ACTION_EDIT, uri);
+			
+			
+
+			IntentFilter filter = new IntentFilter(Intent.ACTION_EDIT);
+			filter.addDataScheme("geo");
+			filter.addDataAuthority("geoloqi.com", null);
+			filter.addDataPath(".*", PatternMatcher.PATTERN_SIMPLE_GLOB);
+			
+			String message = "";
+			filter.match(updateLocation.getAction(),updateLocation.resolveType(this),updateLocation.getScheme(),updateLocation.getData(),updateLocation.getCategories(),message);
+			log(message);
+			
+			
+			log("Broadcasting \""+uri+"\"");
 			context.sendBroadcast(updateLocation);
+			log("Finished broadcasting.");
 			// Intent to change the user's location is now broadcast.
 			
 			// Notify the user of their new location.
@@ -205,20 +198,15 @@ public class GeoloqiService extends Service implements LocationListener {
 			//// Pass the Notification to the NotificationManager
 			notificationManager.notify(GeoloqiService.NOTIFICATION_ID, notification);
 			// User is now notified of their location.
+			log("Leaving GeoloqiService.onLocationChanged()");
 		}
 	}
 
-	public void onProviderDisabled(String provider) {
-		// TODO Auto-generated method stub
-	}
+	public void onProviderDisabled(String provider) { }
 
-	public void onProviderEnabled(String provider) {
-		// TODO Auto-generated method stub
-	}
+	public void onProviderEnabled(String provider) { }
 
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// TODO Auto-generated method stub		
-	}
+	public void onStatusChanged(String provider, int status, Bundle extras) { }
 	
 	/**
 	 * Kill and reset the timer for sending the points to the server
@@ -241,24 +229,21 @@ public class GeoloqiService extends Service implements LocationListener {
 		protected Void doInBackground(Void... v) {
 			// Get all unsent points from the DB and send to the Geoloqi API
 			GeoloqiHTTPRequest.singleton().locationUpdate(db, GeoloqiService.this);
-			
 			return null;
 		}
 
 		protected void onProgressUpdate() {
-
 		}
 
 		// Runs with the return value of doInBackground
 		@Override
 		protected void onPostExecute(Void v) {
-			// Log.d(TAG, "Flush queue completed");
 			lastPointSent = GeoloqiHTTPRequest.singleton().lastSent;
 		}		
 	}
 	
 	public class LQSendingTimerTask extends TimerTask {
-		private Runnable runnable = new Runnable() {
+		private final Runnable runnable = new Runnable() {
 			public void run() {
 				new LQFlushQueue().execute();
 			}
@@ -276,4 +261,8 @@ public class GeoloqiService extends Service implements LocationListener {
 			lastBatteryLevel = intent.getIntExtra("level", 0);
 		}
 	};
+	
+	public static void log(String message){
+		Log.i("bpl29",message);
+	}
 }

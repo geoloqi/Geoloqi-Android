@@ -1,20 +1,15 @@
 package com.geoloqi.android1;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
 public class GeoloqiLayerCatalog extends Activity {
 	
 	private static GeoloqiLayerCatalog layerCatalog;
+	@SuppressWarnings("unused")
 	private SharedPreferences preferences;
 	private WebView webView;
 	
