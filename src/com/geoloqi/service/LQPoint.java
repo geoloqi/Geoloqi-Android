@@ -1,4 +1,4 @@
-package com.geoloqi.android1;
+package com.geoloqi.service;
 
 public class LQPoint {
 	public double latitude;

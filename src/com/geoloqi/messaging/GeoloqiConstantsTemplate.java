@@ -1,4 +1,4 @@
-package com.geoloqi.android1;
+package com.geoloqi.messaging;
 
 public class GeoloqiConstantsTemplate {
 	public static final String GEOLOQI_ID = "";

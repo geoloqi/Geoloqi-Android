@@ -1,4 +1,4 @@
-package com.geoloqi.android1;
+package com.geoloqi.messaging;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -20,6 +20,10 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.geoloqi.service.LQLocationData;
+import com.geoloqi.ui.Geoloqi;
+import com.geoloqi.ui.GeoloqiPreferences;
 
 import android.content.Context;
 import android.database.Cursor;

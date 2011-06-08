@@ -1,4 +1,8 @@
-package com.geoloqi.android1;
+package com.geoloqi.ui;
+
+import com.geoloqi.android1.R;
+import com.geoloqi.android1.R.xml;
+import com.geoloqi.messaging.LQToken;
 
 import android.content.Context;
 import android.content.SharedPreferences;

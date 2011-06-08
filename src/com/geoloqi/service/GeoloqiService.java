@@ -1,9 +1,16 @@
-package com.geoloqi.android1;
+package com.geoloqi.service;
 
 import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import com.geoloqi.Util;
+import com.geoloqi.android1.R;
+import com.geoloqi.android1.R.drawable;
+import com.geoloqi.messaging.GeoloqiHTTPRequest;
+import com.geoloqi.ui.Geoloqi;
+import com.geoloqi.ui.GeoloqiPreferences;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -54,7 +61,6 @@ public class GeoloqiService extends Service implements LocationListener {
 			public void onReceive(Context context, Intent intent) {
 				log("DATA: "+intent.getDataString());
 			}
-			
 		}, new IntentFilter());
 		
 		Log.d(TAG, "onCreate");

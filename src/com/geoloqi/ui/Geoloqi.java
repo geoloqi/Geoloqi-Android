@@ -1,4 +1,4 @@
-package com.geoloqi.android1;
+package com.geoloqi.ui;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -33,6 +33,13 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.geoloqi.Util;
+import com.geoloqi.android1.R;
+import com.geoloqi.messaging.GeoloqiHTTPRequest;
+import com.geoloqi.messaging.LQToken;
+import com.geoloqi.service.GeoloqiService;
+import com.geoloqi.service.LQLocationData;
 
 public class Geoloqi extends Activity implements OnClickListener {
 

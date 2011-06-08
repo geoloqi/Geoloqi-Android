@@ -1,4 +1,4 @@
-package com.geoloqi.android1;
+package com.geoloqi.messaging;
 
 import java.util.Date;
 

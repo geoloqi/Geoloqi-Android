@@ -1,4 +1,6 @@
-package com.geoloqi.android1;
+package com.geoloqi.service;
+
+import com.geoloqi.ui.Geoloqi;
 
 import android.content.ContentValues;
 import android.content.Context;

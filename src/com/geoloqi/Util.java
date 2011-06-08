@@ -1,4 +1,4 @@
-package com.geoloqi.android1;
+package com.geoloqi;
 
 import android.location.Location;
 import android.net.Uri;
