@@ -33,6 +33,7 @@ import com.geoloqi.GeoloqiReceiver;
 import com.geoloqi.Util;
 import com.geoloqi.android1.R;
 import com.geoloqi.messaging.GeoloqiHTTPRequest;
+import com.geoloqi.messaging.GeoloqiMessenger;
 import com.geoloqi.messaging.LQToken;
 import com.geoloqi.service.GeoloqiService;
 
@@ -45,7 +46,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 	private static final int LOGIN_DIALOG_ID = 1;
 	private static final int SIGNUP_DIALOG_ID = 2;
 	private Button buttonStart, buttonLayerCatalog, buttonSignup;
-	@SuppressWarnings("unused")//FIXME
 	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel,
 			accLabel, accountLabel, textNotLoggedIn;
 	private String username;
@@ -357,7 +357,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 				altLabel.setText("" + location.getAltitude() + "m");
 				spdLabel.setText("" + location.getSpeed() + " km/h");
 				accLabel.setText("" + location.getAccuracy() + "m");
-				//numPointsLabel.setText("" + db.numberOfUnsentPoints());FIXME
+				numPointsLabel.setText("" + GeoloqiMessenger.getUnsentPointCount());
 				
 				if (username == null || username.equals("(anonymous)")) {
 					accountLabel.setText("(not logged in)");
