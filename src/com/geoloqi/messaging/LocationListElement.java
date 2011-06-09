@@ -113,8 +113,7 @@ class LocationListElement {
 		location.setTime(cursor.getInt(cursor.getColumnIndex(DATE)));
 		location.setAltitude(cursor.getInt(cursor.getColumnIndex(ALTITUDE)));
 		location.setSpeed(cursor.getInt(cursor.getColumnIndex(SPEED)));
-		location.setAccuracy(cursor.getInt(cursor
-				.getColumnIndex(HORIZONTAL_ACCURACY)));
+		location.setAccuracy(cursor.getInt(cursor.getColumnIndex(HORIZONTAL_ACCURACY)));
 		return location;
 	}
 
@@ -167,7 +166,9 @@ class LocationListElement {
 		
 		//Reclaim any unaccounted for locations.
 		Cursor cursor = db.query(TABLE_NAME, new String[] {ID}, null, null, null, null, null, "1");
-		cursor.moveToFirst();
+		if(!cursor.moveToFirst()){
+			return null;
+		}
 		LocationListElement last, first = new LocationListElement(cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
 		last = first;
 		while(cursor.moveToNext()){
