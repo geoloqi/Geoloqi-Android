@@ -183,9 +183,7 @@ private class MessagingReceiver extends GeoloqiReceiver {
 			for(count=1;l!=null;count++){
 				l=l.next;
 			}
-			queueLock.acquireUninterruptibly();
 			unsentPointCount = count + backlog.size();
-			queueLock.release();
 		}
 		
 		private void updateNotification(Location location) {
