@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.Location;
@@ -230,6 +231,8 @@ class LocationListElement {
 	public void finalize() throws Throwable{
 		try{
 			delete.execute();
+		}catch(SQLException e) {
+			Util.log("LocationListElement: " + e);
 		}finally {
 			super.finalize();
 		}

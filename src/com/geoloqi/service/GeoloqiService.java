@@ -41,6 +41,7 @@ public class GeoloqiService extends Service implements LocationListener {
 	@Override
 	public void onDestroy() {
 		Toast.makeText(this, "Geoloqi Tracker Stopped", Toast.LENGTH_LONG).show();
+		((LocationManager) getSystemService(LOCATION_SERVICE)).removeUpdates(this);
 		messenger.stop();
 	}
 	
