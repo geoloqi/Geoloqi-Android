@@ -159,7 +159,9 @@ private class MessagingReceiver extends GeoloqiReceiver {
 		@Override
 		public void onReceive(Context context, Location location) {
 			Util.log("Received a broadcast.");
+			queueLock.acquireUninterruptibly();
 			backlog.add(new Pair<Location, Integer>(location, battery.getBatteryLevel()));
+			queueLock.release();
 			updateUnsentPointCount();
 			updateNotification(location);
 			if (shouldSendData(context) && rezendezvous.availablePermits()==0) {
@@ -181,7 +183,9 @@ private class MessagingReceiver extends GeoloqiReceiver {
 			for(count=1;l!=null;count++){
 				l=l.next;
 			}
+			queueLock.acquireUninterruptibly();
 			unsentPointCount = count + backlog.size();
+			queueLock.release();
 		}
 		
 		private void updateNotification(Location location) {
