@@ -25,6 +25,7 @@ public class LQToken {
 		this.scope = scope;
 	}
 
+	@Override
 	public String toString() {
 		return accessToken + " " + refreshToken + " " + expiresAt.toString() + " " + scope.toString();
 	}

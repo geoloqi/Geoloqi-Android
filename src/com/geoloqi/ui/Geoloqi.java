@@ -1,25 +1,19 @@
 package com.geoloqi.ui;
 
 import java.text.DecimalFormat;
-import java.util.List;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.PatternMatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,54 +28,54 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.geoloqi.GeoloqiPreferences;
+import com.geoloqi.GeoloqiReceiver;
 import com.geoloqi.Util;
 import com.geoloqi.android1.R;
 import com.geoloqi.messaging.GeoloqiHTTPRequest;
 import com.geoloqi.messaging.LQToken;
 import com.geoloqi.service.GeoloqiService;
-import com.geoloqi.service.LQLocationData;
 
 public class Geoloqi extends Activity implements OnClickListener {
 
 	// Broadcast Receiver for listening to the Geoloqi Service
-	private static LocationBroadcastReceiver receiver;
+	private static UIUpdateReceiver receiver;
 
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
 	private static final int SIGNUP_DIALOG_ID = 2;
-	private Button buttonStart, buttonLayerCatalog, buttonSignup; // ,
-																	// buttonStop,
-																	// buttonUpdate;
-	@SuppressWarnings("unused")
+	private Button buttonStart, buttonLayerCatalog, buttonSignup;
+	@SuppressWarnings("unused")//FIXME
 	private TextView latLabel, lngLabel, numPointsLabel, altLabel, spdLabel,
-			accLabel, lastSentLabel, accountLabel, textNotLoggedIn;
-	protected LQLocationData db;
-	@SuppressWarnings("unused")
-	private final Handler handler = new Handler();
-	public Context context;
+			accLabel, accountLabel, textNotLoggedIn;
 	private String username;
-
-	public static void log(String message){
-		Log.i("bpl29",message);
-	}
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		context = this;
-
+		Util.logo();
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main);
+		initializeGUI();
 		
-		//Register the receiver
-		log("Registering the receiver.");
-		receiver = new LocationBroadcastReceiver();
-		IntentFilter filter = new IntentFilter(Intent.ACTION_EDIT);
-		filter.addDataScheme("geo");
-		filter.addDataAuthority("geoloqi.com", null);
-		filter.addDataPath(".*", PatternMatcher.PATTERN_SIMPLE_GLOB);
-		context.registerReceiver(receiver, filter);
+		receiver = new UIUpdateReceiver(this);
+		
+		if (!Util.isServiceRunning(this,GeoloqiService.class.getName())) {
+			buttonStart.setText("Stop Tracking");
+			ComponentName response = startService(new Intent(this, GeoloqiService.class));
+			if(response == null) {
+				Util.log("Geoloqi could not start GeoloqiService");
+				throw new RuntimeException("Geoloqi could not start GeoloqiService");
+			}
+		} else {
+			buttonStart.setText("Start Tracking");
+		}
 
-		// Initialize GUI
+		ImageView image = (ImageView) findViewById(R.id.geoloqiLogo);
+		image.setImageResource(R.drawable.geoloqi_300x100);
+		new LQGetUsername().execute();
+	}
+	
+	private void initializeGUI() {
+		setContentView(R.layout.main);
 		buttonStart = (Button) findViewById(R.id.buttonStart);
 		buttonSignup = (Button) findViewById(R.id.buttonSignup);
 		buttonLayerCatalog = (Button) findViewById(R.id.buttonLayerCatalog);
@@ -93,41 +87,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 		accLabel = (TextView) findViewById(R.id.textAccuracy);
 		numPointsLabel = (TextView) findViewById(R.id.textNumPointsInQueue);
 		accountLabel = (TextView) findViewById(R.id.textAccount);
-		// // lastSentLabel = (TextView) findViewById(R.id.textLastSent);
 		textNotLoggedIn = (TextView) findViewById(R.id.textNotLoggedIn);
 		textNotLoggedIn.setVisibility(View.INVISIBLE);
-
 		buttonStart.setOnClickListener(this);
 		buttonSignup.setOnClickListener(this);
 		buttonLayerCatalog.setOnClickListener(this);
-		// // buttonStop.setOnClickListener(this);
-		// // buttonUpdate.setOnClickListener(this);
-		// GUI Initialized.
-
-		// Initialize location database wrapper.
-		db = new LQLocationData(this);
-
-		// FIXME: Timer instantiates new thread to start AsyncTask. Non-UI threads should not start AsyncTasks.
-		// FIXME: Refer to http://developer.android.com/reference/android/os/AsyncTask.html > Threading Rules
-		//new Timer().schedule(new MyTimerTask(), 0, 1000);
-		
-		if (!isServiceRunning()) {
-			buttonStart.setText("Stop Tracking");
-			startService(new Intent(this, GeoloqiService.class));
-		} else {
-			buttonStart.setText("Start Tracking");
-		}
-
-		ImageView image = (ImageView) findViewById(R.id.geoloqiLogo);
-		image.setImageResource(R.drawable.geoloqi_300x100);
-		new LQGetUsername().execute();
-	}
-	
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		log("Unregistering the receiver.");
-		context.unregisterReceiver(receiver);
 	}
 
 	@Override
@@ -173,7 +137,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	public void onClick(View src) {
 		switch (src.getId()) {
 		case R.id.buttonStart:
-			if (!isServiceRunning()) {
+			if (!Util.isServiceRunning(this.getApplicationContext(),GeoloqiService.class.getName())) {
 				startService(new Intent(this, GeoloqiService.class));
 				buttonStart.setText("Stop Tracking");
 			} else {
@@ -234,16 +198,15 @@ public class Geoloqi extends Activity implements OnClickListener {
 										pwd.getText().toString());
 						Geoloqi.this.removeDialog(LOGIN_DIALOG_ID);
 						if (token == null) {
-							Toast.makeText(context, "Error logging in",
-									Toast.LENGTH_LONG).show();
+							Toast.makeText(Geoloqi.this, "Error logging in",Toast.LENGTH_LONG).show();
 						} else {
-							GeoloqiPreferences.setToken(token, Geoloqi.this);
+							Util.setToken(token, Geoloqi.this);
 							Log.d(Geoloqi.TAG,
 									"Got access token: " + token.toString());
-							Toast.makeText(context, "Logged in!",
+							Toast.makeText(Geoloqi.this, "Logged in!",
 									Toast.LENGTH_LONG).show();
 							username = null;
-							GeoloqiPreferences.setUsername(null, Geoloqi.this);
+							Util.setUsername(null, Geoloqi.this);
 							new LQGetUsername().execute();
 						}
 					}
@@ -288,17 +251,17 @@ public class Geoloqi extends Activity implements OnClickListener {
 										name.getText().toString());
 						Geoloqi.this.removeDialog(SIGNUP_DIALOG_ID);
 						if (token == null) {
-							Toast.makeText(context, "Error signing up",
+							Toast.makeText(Geoloqi.this, "Error signing up",
 									Toast.LENGTH_LONG).show();
 						} else {
-							GeoloqiPreferences.setToken(token, Geoloqi.this);
+							Util.setToken(token, Geoloqi.this);
 							Log.d(Geoloqi.TAG,
 									"Got access token: " + token.toString());
-							Toast.makeText(context,
+							Toast.makeText(Geoloqi.this,
 									"Success! Check your email!",
 									Toast.LENGTH_LONG).show();
 							username = null;
-							GeoloqiPreferences.setUsername(null, Geoloqi.this);
+							Util.setUsername(null, Geoloqi.this);
 							new LQGetUsername().execute();
 						}
 					}
@@ -326,36 +289,20 @@ public class Geoloqi extends Activity implements OnClickListener {
 		}
 	}
 
-	public boolean isServiceRunning() {
-		log("In isServiceRunning");
-		final ActivityManager activityManager = (ActivityManager) getSystemService(Geoloqi.ACTIVITY_SERVICE);
-		final List<RunningServiceInfo> services = activityManager.getRunningServices(Integer.MAX_VALUE);
 
-		boolean isServiceFound = false;
-
-		for (int i = 0; i < services.size(); i++) {
-			if ("com.geoloqi.android1".equals(services.get(i).service.getPackageName())) {
-				if ("com.geoloqi.android1.GeoloqiService".equals(services.get(i).service.getClassName())) {
-					isServiceFound = true;
-				}
-			}
-		}
-		log("Leaving isServiceRunning");
-		return isServiceFound;
-	}
 
 	class LQGetUsername extends AsyncTask<Void, Void, String> {
 		// Doesn't have access to the UI thread
 		@Override
 		protected String doInBackground(Void... v) {
 			// Attempt to retrieve the username from the preferences
-			String storedUsername = GeoloqiPreferences.getUsername(context);
+			String storedUsername = Util.getUsername(Geoloqi.this);
 			// If it's not there, then make a server call to get the username
 			if (storedUsername == null || storedUsername.equals("")
 					|| storedUsername.equals("(anonymous)")) {
 				storedUsername = GeoloqiHTTPRequest.singleton()
-						.accountUsername(context);
-				GeoloqiPreferences.setUsername(storedUsername, context);
+						.accountUsername(Geoloqi.this);
+				Util.setUsername(storedUsername, Geoloqi.this);
 				Log.i(TAG, ">>> got new username! " + storedUsername);
 			}
 			return storedUsername;
@@ -383,118 +330,47 @@ public class Geoloqi extends Activity implements OnClickListener {
 			}
 		}
 	}
+	
+	private class UIUpdateReceiver extends GeoloqiReceiver {
 
-/*
-	class LQUpdateUI extends AsyncTask<Void, Void, LQPoint> {
-
-		// Doesn't have access to the UI thread
-		@Override
-		protected LQPoint doInBackground(Void... v) {
-			return db.getLastLocation();
+		UIUpdateReceiver(Context context) {
+			super(context);
 		}
 
-		protected void onProgressUpdate() {
-
-		}
-
-		// Runs with the return value of doInBackground, has access to the UI
-		// thread
 		@Override
-		protected void onPostExecute(LQPoint point) {
-			if (point == null)
-				return;
+		public void onReceive(Context context, Location location) {
+			runOnUiThread(new UpdateUI(location));
+		}
+		
+		private class UpdateUI implements Runnable {
 
-			latLabel.setText((new DecimalFormat("#.00000")
-					.format(point.latitude)));
-			lngLabel.setText((new DecimalFormat("#.00000")
-					.format(point.longitude)));
-			altLabel.setText("" + point.altitude + "m");
-			spdLabel.setText("" + point.speed + " km/h");
-			accLabel.setText("" + point.horizontalAccuracy + "m");
-			numPointsLabel.setText("" + db.numberOfUnsentPoints());
+			private final Location location;
 
-			if (username == null || username.equals("(anonymous)")) {
-				accountLabel.setText("(not logged in)");
-				buttonLayerCatalog.setVisibility(View.INVISIBLE);
-				textNotLoggedIn.setVisibility(View.VISIBLE);
-				buttonSignup.setVisibility(View.VISIBLE);
-			} else {
-				accountLabel.setText(username);
-				buttonLayerCatalog.setVisibility(View.VISIBLE);
-				textNotLoggedIn.setVisibility(View.INVISIBLE);
-				buttonSignup.setVisibility(View.INVISIBLE);
+			UpdateUI(Location location) {
+				this.location = location;
 			}
 
-			// TODO: Talk to the service to find out the date the last point was
-			// sent
-			// Date lastSent = ???
-			// if(lastSent == null)
-			// return;
-			//
-			// lastSentLabel.setText(""+((System.currentTimeMillis()/1000) -
-			// lastSent.getTime()) + " seconds");
-		}
-	}
-
-	public class MyTimerTask extends TimerTask {
-		private Runnable runnable = new Runnable() {
 			public void run() {
-				new LQUpdateUI().execute();
-				if (isServiceRunning()) {
-					buttonStart.setText("Stop Tracking");
+				Util.log("Updating UI!");
+				latLabel.setText((new DecimalFormat("#.00000").format(location.getLatitude())));
+				lngLabel.setText((new DecimalFormat("#.00000").format(location.getLongitude())));
+				altLabel.setText("" + location.getAltitude() + "m");
+				spdLabel.setText("" + location.getSpeed() + " km/h");
+				accLabel.setText("" + location.getAccuracy() + "m");
+				//numPointsLabel.setText("" + db.numberOfUnsentPoints());FIXME
+				
+				if (username == null || username.equals("(anonymous)")) {
+					accountLabel.setText("(not logged in)");
+					buttonLayerCatalog.setVisibility(View.INVISIBLE);
+					textNotLoggedIn.setVisibility(View.VISIBLE);
+					buttonSignup.setVisibility(View.VISIBLE);
 				} else {
-					buttonStart.setText("Start Tracking");
+					accountLabel.setText(username);
+					buttonLayerCatalog.setVisibility(View.VISIBLE);
+					textNotLoggedIn.setVisibility(View.INVISIBLE);
+					buttonSignup.setVisibility(View.INVISIBLE);
 				}
-			}
-		};
 
-		@Override
-		public void run() {
-			handler.post(runnable);
-		}
-	}
-*/
-	private class LocationBroadcastReceiver extends BroadcastReceiver {
-
-		LocationBroadcastReceiver() {
-			super();
-		}
-
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			runOnUiThread(new UpdateUI(Util.decodeLocation(intent.getData())));
-		}
-
-	}
-
-	// WARNING: DO NOT RUN THIS OUTSIDE OF THE UI THREAD.
-	private class UpdateUI implements Runnable {
-
-		private final Location location;
-
-		UpdateUI(Location location) {
-			this.location = location;
-		}
-
-		public void run() {
-			log("Updating UI!");
-			latLabel.setText((new DecimalFormat("#.00000").format(location.getLatitude())));
-			lngLabel.setText((new DecimalFormat("#.00000").format(location.getLongitude())));
-			altLabel.setText("" + location.getAltitude() + "m");
-			spdLabel.setText("" + location.getSpeed() + " km/h");
-			accLabel.setText("" + location.getAccuracy() + "m");
-			numPointsLabel.setText("" + db.numberOfUnsentPoints());
-			
-			if (username == null || username.equals("(anonymous)")) {
-				accountLabel.setText("(not logged in)");
-				buttonLayerCatalog.setVisibility(View.INVISIBLE);
-				textNotLoggedIn.setVisibility(View.VISIBLE);
-				buttonSignup.setVisibility(View.VISIBLE);
-			} else {
-				accountLabel.setText(username);
-				buttonLayerCatalog.setVisibility(View.VISIBLE);
-				textNotLoggedIn.setVisibility(View.INVISIBLE);
-				buttonSignup.setVisibility(View.INVISIBLE);
 			}
 
 		}

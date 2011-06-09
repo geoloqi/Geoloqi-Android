@@ -1,6 +1,4 @@
-package com.geoloqi.service;
-
-import com.geoloqi.ui.Geoloqi;
+package com.geoloqi.messaging;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,6 +7,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
 import android.util.Log;
+
+import com.geoloqi.ui.Geoloqi;
 
 public class LQLocationData extends SQLiteOpenHelper {
 
@@ -88,40 +88,6 @@ public class LQLocationData extends SQLiteOpenHelper {
 		}
 		cursor.close();
 		return unsentPoints;
-	}
-	
-	public LQPoint getLastLocation() {
-		SQLiteDatabase db = this.getReadableDatabase();
-		Cursor cursor = db.rawQuery("SELECT * FROM lqLocationData ORDER BY date DESC LIMIT 1", null);
-		LQPoint point = null;
-		while(cursor.moveToNext()) {
-			point = new LQPoint();
-			point.latitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LATITUDE));
-			point.longitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LONGITUDE));
-			point.date = cursor.getInt(cursor.getColumnIndex(LQLocationData.DATE));
-			point.altitude = cursor.getInt(cursor.getColumnIndex(LQLocationData.ALTITUDE));
-			point.speed = cursor.getInt(cursor.getColumnIndex(LQLocationData.SPEED));
-			point.horizontalAccuracy = cursor.getInt(cursor.getColumnIndex(LQLocationData.HORIZONTAL_ACCURACY));
-		}
-		cursor.close();
-		return point;
-	}
-
-	public LQPoint getLastSentLocation() {
-		SQLiteDatabase db = this.getReadableDatabase();
-		Cursor cursor = db.rawQuery("SELECT * FROM lqLocationData WHERE sent = 1 ORDER BY date DESC LIMIT 1", null);
-		LQPoint point = null;
-		while(cursor.moveToNext()) {
-			point = new LQPoint();
-			point.latitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LATITUDE));
-			point.longitude = cursor.getDouble(cursor.getColumnIndex(LQLocationData.LONGITUDE));
-			point.date = cursor.getInt(cursor.getColumnIndex(LQLocationData.DATE));
-			point.altitude = cursor.getInt(cursor.getColumnIndex(LQLocationData.ALTITUDE));
-			point.speed = cursor.getInt(cursor.getColumnIndex(LQLocationData.SPEED));
-			point.horizontalAccuracy = cursor.getInt(cursor.getColumnIndex(LQLocationData.HORIZONTAL_ACCURACY));
-		}
-		cursor.close();
-		return point;
 	}
 
 	public Cursor getUnsentPoints() {

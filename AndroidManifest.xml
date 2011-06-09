@@ -18,10 +18,11 @@
         <activity android:name="com.geoloqi.ui.GeoloqiLayerCatalog"
                   android:label="@string/layerCatalog">
         </activity>
-        <activity android:name="com.geoloqi.ui.GeoloqiPreferences"
+        <activity android:name="com.geoloqi.GeoloqiPreferences"
                   android:label="@string/preferences">
         </activity>
 		<service android:enabled="true" android:name="com.geoloqi.service.GeoloqiService" android:process=":lqRemote" />
+		<service android:enabled="true" android:name="com.geoloqi.messaging.GeoloqiMessenger" android:process=":lqRemote" />
     </application>
     <uses-sdk android:minSdkVersion="7" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
