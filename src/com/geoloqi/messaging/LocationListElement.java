@@ -156,15 +156,26 @@ class LocationListElement {
 	 * @param db
 	 *            SQLite database to back all LocationListElements.
 	 */
-	public static void setDatabase(SQLiteDatabase db) {
+	public static LocationListElement initializeDatabase(SQLiteDatabase db) {
 		Util.log("Setting Database.");
 		if (LocationListElement.db != null) {
 			throw new RuntimeException(
 					"Cannot set the LocationListElement database twice.");
-		} else {
-			db.setLockingEnabled(true);
-			LocationListElement.db = db;
 		}
+		db.setLockingEnabled(true);
+		LocationListElement.db = db;
+		
+		//Reclaim any unaccounted for locations.
+		Cursor cursor = db.query(TABLE_NAME, new String[] {ID}, null, null, null, null, null, "1");
+		cursor.moveToFirst();
+		LocationListElement last, first = new LocationListElement(cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
+		last = first;
+		while(cursor.moveToNext()){
+			LocationListElement next = new LocationListElement(cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
+			last.next = next;
+			last = next;
+		}
+		return first;
 	}
 
 	/**

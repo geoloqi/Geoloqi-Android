@@ -82,7 +82,7 @@ public class GeoloqiService extends Service implements LocationListener {
 		haveNotUpdated = lastUpdate == null;
 		if(haveNotUpdated)
 			return true;
-		timeElapsed = lastUpdate.getTime() >= System.currentTimeMillis() - Util.getMinTime(this);
+		timeElapsed = lastUpdate.getTime() < System.currentTimeMillis() - Util.getMinTime(this);
 		isAccurate = !location.hasAccuracy() || location.getAccuracy() < 600;
 		return timeElapsed && isAccurate;
 	}

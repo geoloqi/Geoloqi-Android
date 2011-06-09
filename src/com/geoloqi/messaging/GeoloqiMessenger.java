@@ -52,9 +52,14 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	
 	protected GeoloqiMessenger(Context context){
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		this.getReadableDatabase();
+		LocationListElement old = LocationListElement.initializeDatabase(this.getReadableDatabase());
+		if(old != null) {
+			firstUnsent = old;
+			last = old;
+		}
 		this.context = context;
 		receiver = new MessagingReceiver(context);
+
 	}
 	
 	public static GeoloqiMessenger singleton(Context context) {
@@ -157,7 +162,7 @@ private class MessagingReceiver extends GeoloqiReceiver {
 			backlog.add(new Pair<Location, Integer>(location, battery.getBatteryLevel()));
 			updateUnsentPointCount();
 			updateNotification(location);
-			if (shouldSendData(context)) {
+			if (shouldSendData(context) && rezendezvous.availablePermits()==0) {
 				rezendezvous.release();
 			}
 		}
@@ -218,7 +223,6 @@ public void onCreate(SQLiteDatabase db) {
 				LocationListElement.RATE_LIMIT + " INTEGER," +
 				LocationListElement.BATTERY + " INTEGER);");
 	}catch(RuntimeException e) { }
-	LocationListElement.setDatabase(db);
 }
 
 @Override
