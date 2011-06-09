@@ -3,6 +3,7 @@ package com.geoloqi.messaging;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -11,6 +12,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.location.Location;
 
 import com.geoloqi.Util;
@@ -36,6 +38,9 @@ class LocationListElement {
 	protected static final String BATTERY = "battery";
 
 	private static SQLiteDatabase db;
+
+	private static Semaphore statementLock = new Semaphore(1);
+	private static SQLiteStatement delete;
 
 	long elementID;
 	LocationListElement next = null;
@@ -157,6 +162,10 @@ class LocationListElement {
 	 */
 	public static LocationListElement initializeDatabase(SQLiteDatabase db) {
 		Util.log("Setting Database.");
+		statementLock.acquireUninterruptibly();
+		delete = db.compileStatement("DELETE * FROM "+TABLE_NAME+" WHERE ID=?");
+		statementLock.release();
+		
 		if (LocationListElement.db != null) {
 			throw new RuntimeException(
 					"Cannot set the LocationListElement database twice.");
@@ -225,7 +234,11 @@ class LocationListElement {
 	@Override
 	public void finalize() throws Throwable{
 		try{
-			db.delete(TABLE_NAME, "ID="+elementID, null);
+			statementLock.acquireUninterruptibly();
+			delete.clearBindings();
+			delete.bindLong(0, elementID);
+			delete.execute();
+			statementLock.release();
 		}finally {
 			super.finalize();
 		}
