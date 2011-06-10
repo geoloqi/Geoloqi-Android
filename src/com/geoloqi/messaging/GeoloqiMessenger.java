@@ -27,39 +27,19 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	LinkedList<Pair<Location, Integer>> backlog = new LinkedList<Pair<Location, Integer>>();
 
 	long lastSend = 0l;
-	Semaphore rezendezvous = new Semaphore(0,true);
-	
-	// last is null if and only if firstSent and firstUnsent are also null.
-	// If firstSent is not null, then firstSent is first.
-	// If firstSent is null and firstUnsent is not null, then firstUnsent is first.
-	// If last is null, then the list is empty.
-	protected LocationListElement firstSent;
-	protected LocationListElement firstUnsent;
-	protected LocationListElement last;
+	private final Semaphore rezendezvous = new Semaphore(0,true);
+	protected LocationListElement first;
 	
 	protected Context context;
 	
-	volatile private static int unsentPointCount = 0;
-	
-	@SuppressWarnings("unused")
 	private final MessagingReceiver receiver;
 	
 	protected GeoloqiMessenger(Context context){
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		firstSent = null;
 		//Rebuild the list of unsent locations persisting from a previous session.
-		firstUnsent = LocationListElement.initializeDatabase(this.getReadableDatabase());
-		//firstUnsent is the head of the list or old is null.
-		if(firstUnsent != null) {
-			// firstUnsent is not null ->
-			// firstUnsent is the head of the list
-			last = firstUnsent;
-			// last.next is not null or last is the end of the list
-			while(last.next!=null){
-				last = last.next;
-			}
-			// last.next is null ->
-			// last is the end of the list
+		first = LocationListElement.initializeDatabase(this.getReadableDatabase());
+		if(first!=null){
+			rezendezvous.release();
 		}
 		this.context = context;
 		receiver = new MessagingReceiver(context);
@@ -90,6 +70,11 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	public void stop() {
 		Util.log("Messenger is going down.");
 		running = false;
+		try {
+			receiver.finalize();
+		} catch (Throwable e) {
+			Util.log("Error in GeoloqiMessenger.stop(): " + e.getMessage());
+		}	
 	}
 	
 	private void getBatch() {
@@ -101,58 +86,68 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 		queueLock.release();
 	}
 	
+	private final int maximumMessageSize = 100;
+	
 	private void sendData() {
 		Util.log("Sending Data.");
 		GeoloqiHTTPRequest post = GeoloqiHTTPRequest.singleton();
-		boolean success = false;
-		firstSent = firstUnsent;
 		// firstUnsent is not null or the queue is empty
-		while(firstUnsent!=null){
-			try {
-				success = post.locationUpdate(context, makeJSON());
-			} catch (JSONException e) {
-				success = false;
+		while(first!=null){
+			LocationListElement next = first;
+
+			//Build the message.
+			String message;
+			try{
+				String debug = "Message:\n";
+				JSONArray json = new JSONArray();
+				for (int i = 0; i < maximumMessageSize && next != null; i++) {
+					json.put(next.toJSON());
+					debug += Util.encodeLocation(next.getLocation())+"\n";
+					next = next.next;
+				}
+				message = json.toString();
+				Util.log(debug);
+			}catch(JSONException e){
+				Util.log(e.getMessage());
+				throw new RuntimeException("GeoloqiMessenger failed with a JSON Exception.");
 			}
-			if (success) {
-				Util.log("Sending succeeded.");
-				deleteSentData();
-			} else {
-				Util.log("Sending failed.");
-				firstUnsent = firstSent;
+			
+			//Send the message.
+			boolean success = true;
+			do{
+				if(success==false){
+					Util.log("Send failed.");
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) { }
+				}
+				Util.log("Sending");
+				//success = post.locationUpdate(context,message);
+				success = Math.random()>.5;//FIXME debug
+			}while(!success);
+			Util.log("Send succeeded.");
+			// Delete the sent points.
+			while(first!=next){
+				Util.log("Deleting: " + first.elementID);
+				first.delete();
+				first = first.next;
 			}
 		}
-		// firstUnsent is null ->
-		// the queue is empty ->
-		last = null;
 		broadcastUnsentPointCount();
 	}
 	
-	private void deleteSentData() {
-		while(!(firstSent==null || firstSent==firstUnsent)){
-			Util.log("Deleting: " + firstSent.elementID);
-			firstSent.delete();
-			firstSent = firstSent.next;
-		}
-	}
-	
-	private String makeJSON() throws JSONException {
-		JSONArray json = new JSONArray();
-		for (int i = 0; i < 100 && firstUnsent != null; i++) {
-			json.put(firstUnsent.toJSON());
-		}
-		return json.toString();
-	}
-	
 	private void enqueueLocation(Context context, Location location, int batteryLevel) {
-		LocationListElement next = new LocationListElement(context, location,batteryLevel);
-		if (last == null) {
-			firstUnsent = next;
-			last = next;
+		LocationListElement next, last;
+		next = new LocationListElement(context, location,batteryLevel);
+		
+		if (first == null) {
+			first = next;
 		} else {
-			last.setNext(next);
-			if (firstUnsent == null) {
-				firstUnsent = next;
+			last = first;
+			while(last.next!=null){
+				last = last.next;
 			}
+			last.setNext(next);
 		}
 	}
 	
@@ -163,23 +158,16 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	}
 	
 	private int getUnsentPointCount() {
-		LocationListElement l;
 		queueLock.acquireUninterruptibly();
 		int count = backlog.size();
-		queueLock.release();
-		if(firstSent!=null) {
-			l = firstSent;
-		}else if(firstUnsent!=null) {
-			l = firstUnsent;
-		}else{
-			Util.log("updateUnsentPointCount() has empty list, returning " + unsentPointCount + " points");
-			return count;
-		}
+		Util.log("Backlog size is "+count+" points.");
+		LocationListElement l = first;
 		while(l!=null){
 			count++;
-			l=l.next;
+			l = l.next;
 		}
-		Util.log("updateUnsentPointCount() returning " + unsentPointCount + " points");
+		queueLock.release();
+		Util.log("updateUnsentPointCount() returning " + count + " points");
 		return count;
 	}
 	
@@ -207,6 +195,15 @@ private class MessagingReceiver extends GeoloqiReceiver {
 
 		private boolean shouldSendData(Context context) {
 			return lastSend < System.currentTimeMillis() - Util.getMinTime(context);
+		}
+		
+		@Override
+		public void finalize() throws Throwable{
+			try{
+				battery.finalize();
+			}finally{
+				super.finalize();
+			}
 		}
 	}
 

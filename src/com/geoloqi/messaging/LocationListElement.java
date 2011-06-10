@@ -171,13 +171,17 @@ class LocationListElement {
 		LocationListElement.db = db;
 		
 		//Reclaim any unaccounted for locations.
-		Cursor cursor = db.query(TABLE_NAME, new String[] {ID}, null, null, null, null, null, "1");
+		Cursor cursor = db.query(TABLE_NAME, new String[] {ID}, null, null, null, null, null, null);
 		if(!cursor.moveToFirst()){
 			return null;
 		}
-		LocationListElement last, first = new LocationListElement(cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
+		LocationListElement last, first;
+		Util.log("Found a backlog of "+cursor.getCount()+" points.");
+		Util.log("Reclaiming "+cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
+		first = new LocationListElement(cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
 		last = first;
 		while(cursor.moveToNext()){
+			Util.log("Reclaiming "+cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
 			LocationListElement next = new LocationListElement(cursor.getInt(cursor.getColumnIndexOrThrow(ID)));
 			last.next = next;
 			last = next;
