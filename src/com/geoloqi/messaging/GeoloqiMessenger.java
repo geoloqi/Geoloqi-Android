@@ -46,14 +46,23 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	
 	protected GeoloqiMessenger(Context context){
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		LocationListElement old = LocationListElement.initializeDatabase(this.getReadableDatabase());
-		if(old != null) {
-			firstUnsent = old;
-			last = old;
+		firstSent = null;
+		//Rebuild the list of unsent locations persisting from a previous session.
+		firstUnsent = LocationListElement.initializeDatabase(this.getReadableDatabase());
+		//firstUnsent is the head of the list or old is null.
+		if(firstUnsent != null) {
+			// firstUnsent is not null ->
+			// firstUnsent is the head of the list
+			last = firstUnsent;
+			// last.next is not null or last is the end of the list
+			while(last.next!=null){
+				last = last.next;
+			}
+			// last.next is null ->
+			// last is the end of the list
 		}
 		this.context = context;
 		receiver = new MessagingReceiver(context);
-
 	}
 	
 	public static GeoloqiMessenger singleton(Context context) {
@@ -96,6 +105,8 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 		Util.log("Sending Data.");
 		GeoloqiHTTPRequest post = GeoloqiHTTPRequest.singleton();
 		boolean success = false;
+		firstSent = firstUnsent;
+		// firstUnsent is not null or the queue is empty
 		while(firstUnsent!=null){
 			try {
 				success = post.locationUpdate(context, makeJSON());
@@ -110,6 +121,8 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 				firstUnsent = firstSent;
 			}
 		}
+		// firstUnsent is null ->
+		// the queue is empty ->
 		last = null;
 		broadcastUnsentPointCount();
 	}
