@@ -126,6 +126,7 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	
 	private void deleteSentData() {
 		while(!(firstSent==null || firstSent==firstUnsent)){
+			Util.log("Deleting: " + firstSent.elementID);
 			firstSent.delete();
 			firstSent = firstSent.next;
 		}
