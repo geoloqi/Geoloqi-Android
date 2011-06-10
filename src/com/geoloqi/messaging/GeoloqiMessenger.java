@@ -7,9 +7,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
+import android.net.Uri;
 import android.util.Pair;
 
 import com.geoloqi.BatteryReceiver;
@@ -81,11 +83,6 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 		running = false;
 	}
 	
-	public static int getUnsentPointCount(){
-		Util.log("getUnsentPointCount() is returning " + unsentPointCount);
-		return unsentPointCount;
-	}
-	
 	private void getBatch() {
 		queueLock.acquireUninterruptibly();
 		for(Pair<Location, Integer> pair: backlog){
@@ -114,6 +111,7 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 			}
 		}
 		last = null;
+		broadcastUnsentPointCount();
 	}
 	
 	private void deleteSentData() {
@@ -145,6 +143,33 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 		}
 	}
 	
+	private void broadcastUnsentPointCount() {
+		Uri uri = new Uri.Builder().scheme("mupdate").authority("geoloqi.com").path("/"+getUnsentPointCount()+"/").build();
+		Intent updateUnsentPointCount = new Intent(Intent.ACTION_EDIT,uri);
+		context.sendBroadcast(updateUnsentPointCount);
+	}
+	
+	private int getUnsentPointCount() {
+		LocationListElement l;
+		queueLock.acquireUninterruptibly();
+		int count = backlog.size();
+		queueLock.release();
+		if(firstSent!=null) {
+			l = firstSent;
+		}else if(firstUnsent!=null) {
+			l = firstUnsent;
+		}else{
+			Util.log("updateUnsentPointCount() has empty list, returning " + unsentPointCount + " points");
+			return count;
+		}
+		while(l!=null){
+			count++;
+			l=l.next;
+		}
+		Util.log("updateUnsentPointCount() returning " + unsentPointCount + " points");
+		return count;
+	}
+	
 private class MessagingReceiver extends GeoloqiReceiver {
 		
 		BatteryReceiver battery;
@@ -161,38 +186,10 @@ private class MessagingReceiver extends GeoloqiReceiver {
 			queueLock.acquireUninterruptibly();
 			backlog.add(new Pair<Location, Integer>(location, battery.getBatteryLevel()));
 			queueLock.release();
-			updateUnsentPointCount();
-			updateNotification(location);
+			broadcastUnsentPointCount();
 			if (shouldSendData(context) && rezendezvous.availablePermits()==0) {
 				rezendezvous.release();
 			}
-		}
-		
-		private void updateUnsentPointCount() {
-			LocationListElement l;
-			if(firstSent!=null) {
-				l = firstSent;
-			}else if(firstUnsent!=null) {
-				l = firstUnsent;
-			}else{
-				queueLock.acquireUninterruptibly();
-				unsentPointCount = backlog.size();
-				queueLock.release();
-				Util.log("updateUnsentPointCount() has empty list, returning " + unsentPointCount + " points");
-				return;
-			}
-			int count;
-			for(count=1;l!=null;count++){
-				l=l.next;
-			}
-			queueLock.acquireUninterruptibly();
-			unsentPointCount = count + backlog.size();
-			queueLock.release();
-			Util.log("updateUnsentPointCount() returning " + unsentPointCount + " points");
-		}
-		
-		private void updateNotification(Location location) {
-			
 		}
 
 		private boolean shouldSendData(Context context) {

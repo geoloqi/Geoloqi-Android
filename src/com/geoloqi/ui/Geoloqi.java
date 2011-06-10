@@ -44,8 +44,8 @@ import com.geoloqi.service.GeoloqiService;
 
 public class Geoloqi extends Activity implements OnClickListener {
 	
-	private static Location lastLocationDebug = null;
-	private static Integer lastUnsentPointCountDebug = null;
+	private static Location lastLocation = new Location("Geoloqi");
+	private static Integer lastUnsentPointCountDebug = 0;
 	
 
 	private static final int NOTIFICATION_ID = 1024;
@@ -400,7 +400,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	
 	private class UpdateUI implements Runnable {
 
-		private final Location location;
+		private Location location;
 		private final Integer unsentPointCount;
 		
 
@@ -418,7 +418,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 				altLabel.setText("" + location.getAltitude() + "m");
 				spdLabel.setText("" + location.getSpeed() + " km/h");
 				accLabel.setText("" + location.getAccuracy() + "m");
-				lastLocationDebug = location;
+				lastLocation = location;
+			}else {
+				location = lastLocation;
 			}
 			
 			if(unsentPointCount!=null) {
@@ -436,7 +438,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 			boolean loggedIn = username != null || username != "";
 			boolean tracking = Util.isServiceRunning(Geoloqi.this,GeoloqiService.class.getName());
 			
-			Util.logMainInterface(lastLocationDebug, lastUnsentPointCountDebug, loggedIn, tracking);
+			Util.logMainInterface(lastLocation, lastUnsentPointCountDebug, loggedIn, tracking);
 			
 			if (username == null || username.equals("(anonymous)")) {
 				accountLabel.setText("(not logged in)");
