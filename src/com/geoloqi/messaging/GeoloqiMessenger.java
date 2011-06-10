@@ -20,7 +20,7 @@ import android.util.Pair;
 import com.geoloqi.BatteryReceiver;
 import com.geoloqi.GeoloqiReceiver;
 import com.geoloqi.Util;
-import com.geoloqi.android1.R;
+import com.geoloqi.android2.R;
 import com.geoloqi.ui.Geoloqi;
 
 public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
@@ -98,6 +98,7 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 		for(Pair<Location, Integer> pair: backlog){
 			enqueueLocation(context, pair.first, pair.second);
 		}
+		backlog.clear();
 		queueLock.release();
 	}
 	
@@ -112,8 +113,10 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 				success = false;
 			}
 			if (success) {
+				Util.log("Sending succeeded.");
 				deleteSentData();
 			} else {
+				Util.log("Sending failed.");
 				firstUnsent = firstSent;
 			}
 		}
@@ -121,7 +124,7 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	}
 	
 	private void deleteSentData() {
-		while(firstSent!=null || (firstUnsent!=null && firstSent!=firstUnsent)){
+		while(!(firstSent==null || firstSent==firstUnsent)){
 			firstSent.delete();
 			firstSent = firstSent.next;
 		}
@@ -191,6 +194,7 @@ private class MessagingReceiver extends GeoloqiReceiver {
 				l=l.next;
 			}
 			unsentPointCount = count + backlog.size();
+			Util.log("Unsent points: " + unsentPointCount);
 		}
 		
 		private void updateNotification(Location location) {

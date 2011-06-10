@@ -7,7 +7,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.geoloqi.android1.R;
+import com.geoloqi.android2.R;
 import com.geoloqi.ui.Geoloqi;
 
 public class GeoloqiPreferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {

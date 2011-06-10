@@ -2,7 +2,9 @@ package com.geoloqi.service;
 
 import java.util.Date;
 
+import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
@@ -42,6 +44,10 @@ public class GeoloqiService extends Service implements LocationListener {
 	public void onDestroy() {
 		Toast.makeText(this, "Geoloqi Tracker Stopped", Toast.LENGTH_LONG).show();
 		((LocationManager) getSystemService(LOCATION_SERVICE)).removeUpdates(this);
+
+		NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+		notificationManager.cancel(Util.NOTIFICATION_ID);
+		
 		messenger.stop();
 	}
 	
@@ -74,7 +80,7 @@ public class GeoloqiService extends Service implements LocationListener {
 			Intent updateLocation = new Intent(Intent.ACTION_EDIT, uri);
 			getApplicationContext().sendBroadcast(updateLocation);
 		}else{
-			Util.log("Not updating.");
+			Util.log("Ignoring location update from the OS.");
 		}
 	}
 	

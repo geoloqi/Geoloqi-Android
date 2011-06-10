@@ -31,7 +31,7 @@ import android.widget.Toast;
 import com.geoloqi.GeoloqiPreferences;
 import com.geoloqi.GeoloqiReceiver;
 import com.geoloqi.Util;
-import com.geoloqi.android1.R;
+import com.geoloqi.android2.R;
 import com.geoloqi.messaging.GeoloqiHTTPRequest;
 import com.geoloqi.messaging.GeoloqiMessenger;
 import com.geoloqi.messaging.LQToken;

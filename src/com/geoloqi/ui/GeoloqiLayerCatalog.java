@@ -7,7 +7,7 @@ import android.preference.PreferenceManager;
 import android.webkit.WebView;
 
 import com.geoloqi.Util;
-import com.geoloqi.android1.R;
+import com.geoloqi.android2.R;
 
 class GeoloqiLayerCatalog extends Activity {
 	

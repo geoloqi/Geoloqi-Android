@@ -5,7 +5,7 @@
  * should not be modified by hand.
  */
 
-package com.geoloqi.android1;
+package com.geoloqi.android2;
 
 public final class R {
     public static final class array {
