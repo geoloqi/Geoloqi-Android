@@ -352,12 +352,17 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 			public void run() {
 				Util.log("Updating UI!");
+				
+				
+				
 				latLabel.setText((new DecimalFormat("#.00000").format(location.getLatitude())));
 				lngLabel.setText((new DecimalFormat("#.00000").format(location.getLongitude())));
 				altLabel.setText("" + location.getAltitude() + "m");
 				spdLabel.setText("" + location.getSpeed() + " km/h");
 				accLabel.setText("" + location.getAccuracy() + "m");
 				numPointsLabel.setText("" + GeoloqiMessenger.getUnsentPointCount());
+				
+				
 				
 				if (username == null || username.equals("(anonymous)")) {
 					accountLabel.setText("(not logged in)");

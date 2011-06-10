@@ -36,8 +36,7 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	
 	// last is null if and only if firstSent and firstUnsent are also null.
 	// If firstSent is not null, then firstSent is first.
-	// If firstSent is null and firstUnsent is not null, then firstUnsent is
-	// first.
+	// If firstSent is null and firstUnsent is not null, then firstUnsent is first.
 	// If last is null, then the list is empty.
 	protected LocationListElement firstSent;
 	protected LocationListElement firstUnsent;
