@@ -46,8 +46,7 @@ public class GeoloqiHTTPRequest {
 	
 	public boolean locationUpdate(Context context, String json){
 		if (updateInProgress == 1) {
-			Log.i(Geoloqi.TAG,
-					"HTTP Request in progress, won't update this time");
+			Util.log("HTTP Request in progress, won't update this time");
 			return false;
 		}
 
@@ -64,8 +63,7 @@ public class GeoloqiHTTPRequest {
 			LQToken token = Util.getToken(context);
 			if (token == null) {
 				updateInProgress = 0;
-				throw new Exception(
-						"No access token present. Won't attempt to send points.");
+				throw new Exception("No access token present. Won't attempt to send points.");
 			}
 
 			HttpClient client = new DefaultHttpClient();
@@ -102,7 +100,8 @@ public class GeoloqiHTTPRequest {
 						throw new Exception(response.get("error") + " " + response.get("error_description"));
 					}
 				} else {
-					Log.d(Geoloqi.TAG, "Completed. Deleting all sent points. " + responseString);
+					Log.d(Geoloqi.TAG, "Completed HTTP request. " + responseString);
+					updateInProgress = 0;
 					this.lastSent = new Date();
 					return true;
 				}

@@ -45,7 +45,7 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	
 	protected Context context;
 	
-	private static int unsentPointCount = 0;
+	volatile private static int unsentPointCount = 0;
 	
 	@SuppressWarnings("unused")
 	private final MessagingReceiver receiver;
@@ -90,6 +90,7 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	}
 	
 	public static int getUnsentPointCount(){
+		Util.log("getUnsentPointCount() is returning " + unsentPointCount);
 		return unsentPointCount;
 	}
 	
@@ -186,15 +187,20 @@ private class MessagingReceiver extends GeoloqiReceiver {
 			}else if(firstUnsent!=null) {
 				l = firstUnsent;
 			}else{
-				unsentPointCount = 0;
+				queueLock.acquireUninterruptibly();
+				unsentPointCount = backlog.size();
+				queueLock.release();
+				Util.log("updateUnsentPointCount() has empty list, returning " + unsentPointCount + " points");
 				return;
 			}
 			int count;
 			for(count=1;l!=null;count++){
 				l=l.next;
 			}
+			queueLock.acquireUninterruptibly();
 			unsentPointCount = count + backlog.size();
-			Util.log("Unsent points: " + unsentPointCount);
+			queueLock.release();
+			Util.log("updateUnsentPointCount() returning " + unsentPointCount + " points");
 		}
 		
 		private void updateNotification(Location location) {

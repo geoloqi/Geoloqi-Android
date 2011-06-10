@@ -70,9 +70,9 @@ public class GeoloqiService extends Service implements LocationListener {
 	}
 
 	public void onLocationChanged(Location location) {
-		Util.log("Got a location.");
+		// Util.log("Got a location.");
 		if(shouldUpdate(location)) {
-			Util.log("Updating.");
+			Util.log("Broadcasting new location update.");
 			lastUpdate = new Date();
 			
 			// Broadcast an intent to change the user's location.
@@ -80,7 +80,7 @@ public class GeoloqiService extends Service implements LocationListener {
 			Intent updateLocation = new Intent(Intent.ACTION_EDIT, uri);
 			getApplicationContext().sendBroadcast(updateLocation);
 		}else{
-			Util.log("Ignoring location update from the OS.");
+			// Util.log("Ignoring location update from the OS.");
 		}
 	}
 	
