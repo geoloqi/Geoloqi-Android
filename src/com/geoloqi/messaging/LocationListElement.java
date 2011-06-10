@@ -10,9 +10,7 @@ import org.json.JSONObject;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
 import android.location.Location;
 
 import com.geoloqi.Util;
@@ -38,8 +36,6 @@ class LocationListElement {
 	protected static final String BATTERY = "battery";
 
 	private static SQLiteDatabase db;
-
-	private SQLiteStatement delete;
 
 	long elementID;
 	LocationListElement next = null;
@@ -91,7 +87,6 @@ class LocationListElement {
 	 *            LocationListElement representing the next location
 	 */
 	public LocationListElement(long id, LocationListElement next) {
-		delete = db.compileStatement("DELETE FROM "+TABLE_NAME+" WHERE ID="+id);
 		this.elementID = id;
 		this.next = next;
 	}
@@ -119,6 +114,7 @@ class LocationListElement {
 		location.setAltitude(cursor.getInt(cursor.getColumnIndex(ALTITUDE)));
 		location.setSpeed(cursor.getInt(cursor.getColumnIndex(SPEED)));
 		location.setAccuracy(cursor.getInt(cursor.getColumnIndex(HORIZONTAL_ACCURACY)));
+		cursor.close();
 		return location;
 	}
 
@@ -127,7 +123,9 @@ class LocationListElement {
 	 */
 	public int getBattery() {
 		Cursor cursor = get();
-		return cursor.getInt(cursor.getColumnIndex(BATTERY));
+		int battery = cursor.getInt(cursor.getColumnIndex(BATTERY));
+		cursor.close();
+		return battery;
 	}
 
 	/**
@@ -135,6 +133,10 @@ class LocationListElement {
 	 */
 	public boolean hasNext() {
 		return next != null;
+	}
+	
+	public void delete() {
+		db.delete(TABLE_NAME, ID+"="+elementID, null);
 	}
 
 	/**
@@ -163,8 +165,7 @@ class LocationListElement {
 	public static LocationListElement initializeDatabase(SQLiteDatabase db) {
 		Util.log("Setting Database.");
 		if (LocationListElement.db != null) {
-			throw new RuntimeException(
-					"Cannot set the LocationListElement database twice.");
+			throw new RuntimeException("Cannot set the LocationListElement database twice.");
 		}
 		db.setLockingEnabled(true);
 		LocationListElement.db = db;
@@ -181,6 +182,7 @@ class LocationListElement {
 			last.next = next;
 			last = next;
 		}
+		cursor.close();
 		return first;
 	}
 
@@ -211,6 +213,7 @@ class LocationListElement {
 		
 		raw.put("battery", cursor.getInt(cursor.getColumnIndexOrThrow(LQLocationData.BATTERY)));
 		raw.put("rate_limit", cursor.getInt(cursor.getColumnIndexOrThrow(LQLocationData.RATE_LIMIT)));
+		cursor.close();
 		
 		client.put("name", "Geoloqi");
 		client.put("version", Util.getVersion());
@@ -226,16 +229,4 @@ class LocationListElement {
 
 		return json;
 	}
-
-	@Override
-	public void finalize() throws Throwable{
-		try{
-			delete.execute();
-		}catch(SQLException e) {
-			Util.log("LocationListElement: " + e);
-		}finally {
-			super.finalize();
-		}
-	}
-
 }

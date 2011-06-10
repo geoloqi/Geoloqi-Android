@@ -103,24 +103,28 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	
 	private void sendData() {
 		Util.log("Sending Data.");
-		firstUnsent = firstSent = last = null;
-		
-//		GeoloqiHTTPRequest post = GeoloqiHTTPRequest.singleton();
-//		boolean success = false;
-//		while(firstUnsent!=null){
-//			try {
-//				success = post.locationUpdate(context, makeJSON());
-//			} catch (JSONException e) {
-//				success = false;
-//			}
-//			if (success) {
-//				firstSent = null;
-//			} else {
-//				firstUnsent = firstSent;
-//				System.gc();
-//			}
-//		}
-//		last = null;
+		GeoloqiHTTPRequest post = GeoloqiHTTPRequest.singleton();
+		boolean success = false;
+		while(firstUnsent!=null){
+			try {
+				success = post.locationUpdate(context, makeJSON());
+			} catch (JSONException e) {
+				success = false;
+			}
+			if (success) {
+				deleteSentData();
+			} else {
+				firstUnsent = firstSent;
+			}
+		}
+		last = null;
+	}
+	
+	private void deleteSentData() {
+		while(firstSent!=null || (firstUnsent!=null && firstSent!=firstUnsent)){
+			firstSent.delete();
+			firstSent = firstSent.next;
+		}
 	}
 	
 	private String makeJSON() throws JSONException {

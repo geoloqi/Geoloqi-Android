@@ -58,8 +58,6 @@ public class GeoloqiHTTPRequest {
 			return true;
 		}
 
-		Log.d(Geoloqi.TAG, "Will attempt to send " + json.length() + " points");
-
 		// Post the JSON object to the API
 		// Log.d(Geoloqi.TAG, json.toString());
 		try {
