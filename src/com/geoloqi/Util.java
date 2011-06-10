@@ -21,8 +21,6 @@ public abstract class Util {
 	private static long TRACKING_LIMIT = 1000l;
 	private static String VERSION = "11.132";
 
-	public static final int NOTIFICATION_ID = 1024;
-
 	public static Uri encodeLocation(Location l){
 		String path = "/" +
 			l.getLatitude() + "/" +
@@ -139,6 +137,19 @@ public abstract class Util {
 		}
 		log("Service \'"+serviceName+"\' is not running.");
 		return false;
+	}
+	
+	public static void logMainInterface(Location location, int unsentPointCount, boolean loggedIn, boolean tracking) {
+		log(" ___________________________ ");
+		log(String.format("  Latitude%17.5f  ", location.getLatitude()));
+		log(String.format("  Longitude%16.5f  ", location.getLongitude()));
+		log(String.format("  Speed%16.1fkm/h  ", location.getSpeed()));
+		log(String.format("  Altitude%16.1fm  ", location.getAltitude()));
+		log(String.format("  Accuracy%16.1fm  ", location.getAccuracy()));
+		log(String.format("  Points In Queue%10d  ", unsentPointCount));
+		log(loggedIn ? "  Account   (not logged in)  " : "  Account       (logged in)  ");
+		log(tracking ? "        Stop Tracking        " : "       Start Tracking        ");
+		log(" --------------------------- ");
 	}
 	
 	public static void logo() {

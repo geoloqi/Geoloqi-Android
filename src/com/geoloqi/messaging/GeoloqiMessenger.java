@@ -1,17 +1,12 @@
 package com.geoloqi.messaging;
 
-import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.concurrent.Semaphore;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
@@ -20,8 +15,6 @@ import android.util.Pair;
 import com.geoloqi.BatteryReceiver;
 import com.geoloqi.GeoloqiReceiver;
 import com.geoloqi.Util;
-import com.geoloqi.android2.R;
-import com.geoloqi.ui.Geoloqi;
 
 public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 
@@ -154,17 +147,12 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	
 private class MessagingReceiver extends GeoloqiReceiver {
 		
-		private static final int NOTIFICATION_ID = 1024;
-		private final Notification notification;
 		BatteryReceiver battery;
 
 		public MessagingReceiver(Context context) {
 			super(context);
 			battery = new BatteryReceiver(context);
 			
-			// Instantiate the notification
-			CharSequence tickerText = "Geoloqi tracker is running";
-			notification = new Notification(R.drawable.ic_stat_notify, tickerText, System.currentTimeMillis());
 		}
 
 		@Override
@@ -204,13 +192,7 @@ private class MessagingReceiver extends GeoloqiReceiver {
 		}
 		
 		private void updateNotification(Location location) {
-			CharSequence contentTitle = "Geoloqi";
-			CharSequence contentText = "" + new DecimalFormat("#.0").format(location.getSpeed() * 3.6) + " km/h, " + unsentPointCount + " points";
-			Intent notificationIntent = new Intent(context, Geoloqi.class);
-			PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
-			notification.flags = Notification.FLAG_ONGOING_EVENT;
-			notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);//FIXME This is deprecated.
-			((NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
+			
 		}
 
 		private boolean shouldSendData(Context context) {
