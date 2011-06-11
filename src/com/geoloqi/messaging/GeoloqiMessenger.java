@@ -132,8 +132,8 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 				first.delete();
 				first = first.next;
 			}
+			broadcastUnsentPointCount();
 		}
-		broadcastUnsentPointCount();
 	}
 	
 	private void enqueueLocation(Context context, Location location, int batteryLevel) {
