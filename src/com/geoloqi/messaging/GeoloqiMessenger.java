@@ -16,12 +16,16 @@ import android.util.Pair;
 
 import com.geoloqi.BatteryReceiver;
 import com.geoloqi.GeoloqiReceiver;
+import com.geoloqi.HTTPRegulator;
 import com.geoloqi.Util;
 
 public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 
-	public boolean running;
-	private static GeoloqiMessenger messenger = null;
+	private static GeoloqiMessenger singleton = null;
+
+	private boolean running;
+	
+	private final HTTPRegulator regulator = new HTTPRegulator();
 	
 	Semaphore queueLock = new Semaphore(1);
 	LinkedList<Pair<Location, Integer>> backlog = new LinkedList<Pair<Location, Integer>>();
@@ -46,10 +50,10 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 	}
 	
 	public static GeoloqiMessenger singleton(Context context) {
-		if(messenger==null) {
-			messenger = new GeoloqiMessenger(context);
+		if(singleton==null) {
+			singleton = new GeoloqiMessenger(context);
 		}
-		return messenger;
+		return singleton;
 	}
 	
 	public void run() {
@@ -86,53 +90,58 @@ public class GeoloqiMessenger extends SQLiteOpenHelper implements Runnable {
 		queueLock.release();
 	}
 	
-	private final int maximumMessageSize = 100;
-	
 	private void sendData() {
 		Util.log("Sending Data.");
 		GeoloqiHTTPRequest post = GeoloqiHTTPRequest.singleton();
 		// firstUnsent is not null or the queue is empty
-		while(first!=null){
+		while(first!=null && running){
 			LocationListElement next = first;
 
 			//Build the message.
 			String message;
+			boolean fullMessage;
 			try{
 				String debug = "Message:\n";
 				JSONArray json = new JSONArray();
-				for (int i = 0; i < maximumMessageSize && next != null; i++) {
+				for (int i = 0; i < regulator.getWindowSize() && next != null; i++) {
 					json.put(next.toJSON());
 					debug += Util.encodeLocation(next.getLocation())+"\n";
 					next = next.next;
 				}
 				message = json.toString();
+				fullMessage = json.length()==regulator.getWindowSize();
 				Util.log(debug);
-			}catch(JSONException e){
+			}catch(JSONException e) {
 				Util.log(e.getMessage());
 				throw new RuntimeException("GeoloqiMessenger failed with a JSON Exception.");
 			}
+			Util.log("Sending");
 			
-			//Send the message.
-			boolean success = true;
-			do{
-				if(success==false){
-					Util.log("Send failed.");
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) { }
+			// Send the message and block on response.
+			//success = post.locationUpdate(context,message);
+			boolean success = (regulator.getWindowSize())/100.0 < 1.0;//FIXME debug
+			
+			if(success){
+				if(fullMessage){
+					regulator.sendSucceeded();
 				}
-				Util.log("Sending");
-				//success = post.locationUpdate(context,message);
-				success = Math.random()>.5;//FIXME debug
-			}while(!success);
-			Util.log("Send succeeded.");
-			// Delete the sent points.
-			while(first!=next){
-				Util.log("Deleting: " + first.elementID);
-				first.delete();
-				first = first.next;
+				Util.log("Send succeeded.");
+				// Delete the sent points.
+				while(first!=next){
+					Util.log("Deleting: " + first.elementID);
+					first.delete();
+					first = first.next;
+				}
+				// Broadcast the new message count.
+				broadcastUnsentPointCount();
+			}else{
+				Util.log("Send failed");
+				regulator.sendFailed();
+				try {
+					//Sleep for a second.
+					Thread.sleep(1000);
+				} catch (InterruptedException e) { }
 			}
-			broadcastUnsentPointCount();
 		}
 	}
 	

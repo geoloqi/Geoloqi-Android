@@ -210,13 +210,13 @@ class LocationListElement {
 		JSONObject client = new JSONObject();
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ",Locale.US);
-		Date d = new Date(cursor.getLong(cursor.getColumnIndexOrThrow(LQLocationData.DATE)) * 1000);
+		Date d = new Date(cursor.getLong(cursor.getColumnIndexOrThrow(DATE)) * 1000);
 
 		location.put("type", "point");
 		location.put("position", point);
 		
-		raw.put("battery", cursor.getInt(cursor.getColumnIndexOrThrow(LQLocationData.BATTERY)));
-		raw.put("rate_limit", cursor.getInt(cursor.getColumnIndexOrThrow(LQLocationData.RATE_LIMIT)));
+		raw.put("battery", cursor.getInt(cursor.getColumnIndexOrThrow(BATTERY)));
+		raw.put("rate_limit", cursor.getInt(cursor.getColumnIndexOrThrow(RATE_LIMIT)));
 		cursor.close();
 		
 		client.put("name", "Geoloqi");

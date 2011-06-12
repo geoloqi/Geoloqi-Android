@@ -79,13 +79,14 @@ public class GeoloqiService extends Service implements LocationListener {
 	}
 	
 	private boolean shouldUpdate(Location location) {
-		boolean haveNotUpdated, timeElapsed, isAccurate;
-		haveNotUpdated = lastUpdate == null;
-		if(haveNotUpdated)
-			return true;
-		timeElapsed = lastUpdate.getTime() < System.currentTimeMillis() - Util.getMinTime(this);
-		isAccurate = !location.hasAccuracy() || location.getAccuracy() < 600;
-		return timeElapsed && isAccurate;
+		return true;//FIXME put it back!
+//		boolean haveNotUpdated, timeElapsed, isAccurate;
+//		haveNotUpdated = lastUpdate == null;
+//		if(haveNotUpdated)
+//			return true;
+//		timeElapsed = lastUpdate.getTime() < System.currentTimeMillis() - Util.getMinTime(this);
+//		isAccurate = !location.hasAccuracy() || location.getAccuracy() < 600;
+//		return timeElapsed && isAccurate;
 	}
 	
 	public static Date getLastUpdate() {

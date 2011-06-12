@@ -410,7 +410,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		}
 
 		public void run() {
-			Util.log("Updating UI!");
+//			Util.log("Updating UI!");
 			
 			if(location!=null){
 				latLabel.setText((new DecimalFormat("#.00000").format(location.getLatitude())));
@@ -435,10 +435,10 @@ public class Geoloqi extends Activity implements OnClickListener {
 				lastUnsentPointCountDebug = unsentPointCount;
 			}
 			
-			boolean loggedIn = username != null || username != "";
-			boolean tracking = Util.isServiceRunning(Geoloqi.this,GeoloqiService.class.getName());
-			
-			Util.logMainInterface(lastLocation, lastUnsentPointCountDebug, loggedIn, tracking);
+//			boolean loggedIn = username != null || username != "";
+//			boolean tracking = Util.isServiceRunning(Geoloqi.this,GeoloqiService.class.getName());
+//			
+//			Util.logMainInterface(lastLocation, lastUnsentPointCountDebug, loggedIn, tracking);
 			
 			if (username == null || username.equals("(anonymous)")) {
 				accountLabel.setText("(not logged in)");
