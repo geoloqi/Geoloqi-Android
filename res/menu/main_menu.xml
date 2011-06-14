@@ -4,6 +4,8 @@
           android:title="Settings" />
     <item android:id="@+id/login"
           android:title="Account" />
+          <item android:id="@+id/share" 
+          android:title="Share" />
     <item android:id="@+id/quit"
           android:title="@string/quit" />
 </menu>

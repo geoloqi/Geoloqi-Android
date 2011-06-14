@@ -25,7 +25,8 @@ import com.geoloqi.ui.Geoloqi;
 
 public class GeoloqiHTTPRequest {
 
-	private static String VERSION = "11.132";
+	@SuppressWarnings("unused")
+	private final static String VERSION = "11.132";
 	private static GeoloqiHTTPRequest singleton;
 	private final String urlBase = "https://api.geoloqi.com/1/";
 	public Date lastSent;
@@ -67,8 +68,7 @@ public class GeoloqiHTTPRequest {
 					// If the error was because of an expired token, refresh the
 					// token and try again
 					if (response.getString("error").equals("expired_token")) {
-						token = GeoloqiHTTPRequest.singleton().oauthToken(
-								token.refreshToken);
+						token = GeoloqiHTTPRequest.singleton().oauthToken(token.refreshToken);
 						if (token != null) {
 							Util.setToken(token, context);
 							return locationUpdate(context, json);
@@ -114,7 +114,8 @@ public class GeoloqiHTTPRequest {
 				String responseString = EntityUtils.toString(resEntity);
 				JSONObject response = new JSONObject(responseString);
 
-				Log.i("Geoloqi", ">>> account/username response" + responseString);
+				Log.i("Geoloqi", ">>> account/username response"
+						+ responseString);
 
 				if (response.has("error")) {
 					// If the error was because of an expired token, give up :)
@@ -155,10 +156,8 @@ public class GeoloqiHTTPRequest {
 
 			ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
 			params.add(new BasicNameValuePair("grant_type", "password"));
-			params.add(new BasicNameValuePair("client_id",
-					GeoloqiConstants.GEOLOQI_ID));
-			params.add(new BasicNameValuePair("client_secret",
-					GeoloqiConstants.GEOLOQI_SECRET));
+			params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
+			params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
 			params.add(new BasicNameValuePair("username", username));
 			params.add(new BasicNameValuePair("password", password));
 			post.setEntity(new UrlEncodedFormEntity(params));
@@ -175,10 +174,7 @@ public class GeoloqiHTTPRequest {
 							+ response.get("error_description"));
 				}
 
-				return new LQToken(response.get("access_token").toString(),
-						response.get("refresh_token").toString(), response.get(
-								"expires_in").toString(), response.get("scope")
-								.toString());
+				return new LQToken(response.get("access_token").toString(), response.get("refresh_token").toString(), response.get("expires_in").toString(), response.get("scope").toString());
 			} else {
 				Log.i(Geoloqi.TAG, "++++ Error getting token");
 			}
@@ -196,10 +192,8 @@ public class GeoloqiHTTPRequest {
 
 			ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
 			params.add(new BasicNameValuePair("grant_type", "refresh_token"));
-			params.add(new BasicNameValuePair("client_id",
-					GeoloqiConstants.GEOLOQI_ID));
-			params.add(new BasicNameValuePair("client_secret",
-					GeoloqiConstants.GEOLOQI_SECRET));
+			params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
+			params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
 			params.add(new BasicNameValuePair("refresh_token", refreshToken));
 			post.setEntity(new UrlEncodedFormEntity(params));
 
@@ -214,10 +208,7 @@ public class GeoloqiHTTPRequest {
 					throw new Exception(response.get("error") + " "
 							+ response.get("error_description"));
 
-				return new LQToken(response.get("access_token").toString(),
-						response.get("refresh_token").toString(), response.get(
-								"expires_in").toString(), response.get("scope")
-								.toString());
+				return new LQToken(response.get("access_token").toString(), response.get("refresh_token").toString(), response.get("expires_in").toString(), response.get("scope").toString());
 			} else {
 				Log.i(Geoloqi.TAG, "++++ Error getting token");
 			}
@@ -234,10 +225,8 @@ public class GeoloqiHTTPRequest {
 			HttpPost post = new HttpPost(postURL);
 
 			ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
-			params.add(new BasicNameValuePair("client_id",
-					GeoloqiConstants.GEOLOQI_ID));
-			params.add(new BasicNameValuePair("client_secret",
-					GeoloqiConstants.GEOLOQI_SECRET));
+			params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
+			params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
 			params.add(new BasicNameValuePair("email", email));
 			params.add(new BasicNameValuePair("name", name));
 			post.setEntity(new UrlEncodedFormEntity(params));
@@ -254,10 +243,7 @@ public class GeoloqiHTTPRequest {
 							+ response.get("error_description"));
 				}
 
-				return new LQToken(response.get("access_token").toString(),
-						response.get("refresh_token").toString(), response.get(
-								"expires_in").toString(), response.get("scope")
-								.toString());
+				return new LQToken(response.get("access_token").toString(), response.get("refresh_token").toString(), response.get("expires_in").toString(), response.get("scope").toString());
 			} else {
 				Log.i(Geoloqi.TAG, "++++ Error getting token");
 			}

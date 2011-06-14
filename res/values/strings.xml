@@ -5,7 +5,7 @@
     <string name="sending">Sending points to the server!</string>
     <string name="preferences">Preferences</string>
     <string name="layerCatalog">Layer Catalog</string>
-
+    <string name="shareDurationPrompt">Duration</string>
 	<!-- Preferences -->
     <string name="tracking_settings">Tracking Settings</string>
     <string name="rate_limit_preference">Rate Limit</string>
@@ -61,4 +61,17 @@
     	<item>600</item>
 	</string-array>
 	
+	<string-array name="entryvalues_sharing_time_limit">
+		<item>10 minutes</item>
+		<item>20 minutes</item>
+		<item>30 minutes</item>
+		<item>1 hour</item>
+		<item>2 hours</item>
+		<item>4 hours</item>
+		<item>8 hours</item>
+		<item>24 hours</item>
+		<item>4 days</item>
+		<item>7 days</item>
+		<item>no time limit</item>
+	</string-array>
 </resources>

@@ -1,6 +1,8 @@
-package com.geoloqi;
+package com.geoloqi.messaging;
 
 import java.util.LinkedList;
+
+import com.geoloqi.Util;
 
 public class HTTPRegulator {
 	
