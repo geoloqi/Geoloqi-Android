@@ -12,7 +12,7 @@ import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.geoloqi.messaging.LQToken;
+import com.geoloqi.rpc.OAuthToken;
 import com.geoloqi.ui.Geoloqi;
 
 public abstract class Util {
@@ -62,13 +62,13 @@ public abstract class Util {
 		return Integer.parseInt(rateLimit);
 	}
 
-	public static LQToken getToken(Context context) {
+	public static OAuthToken getToken(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 	
 		if(p.getString(GeoloqiPreferences.PREF_ACCESS_TOKEN, null) == null)
 			return null;
 	
-		return new LQToken(
+		return new OAuthToken(
 			p.getString(GeoloqiPreferences.PREF_ACCESS_TOKEN, null),
 			p.getString(GeoloqiPreferences.PREF_REFRESH_TOKEN, null),
 			p.getLong(GeoloqiPreferences.PREF_EXPIRES_AT, 0),
@@ -91,7 +91,7 @@ public abstract class Util {
 		e.commit();
 	}
 
-	public static void setToken(LQToken token, Context context) {
+	public static void setToken(OAuthToken token, Context context) {
 		if(token == null)
 			return;
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);

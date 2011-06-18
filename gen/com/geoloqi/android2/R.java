@@ -36,8 +36,8 @@ public final class R {
         public static final int root=0x7f080001;
         public static final int settings=0x7f080016;
         public static final int share=0x7f080018;
-        public static final int shareText=0x7f080012;
-        public static final int spinner1=0x7f080013;
+        public static final int shareMessage=0x7f080012;
+        public static final int shareSpinner=0x7f080013;
         public static final int textAccount=0x7f080002;
         public static final int textAccuracy=0x7f08000b;
         public static final int textAltitude=0x7f08000a;

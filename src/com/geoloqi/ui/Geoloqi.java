@@ -20,6 +20,7 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PatternMatcher;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -37,8 +38,8 @@ import com.geoloqi.GeoloqiPreferences;
 import com.geoloqi.GeoloqiReceiver;
 import com.geoloqi.Util;
 import com.geoloqi.android2.R;
-import com.geoloqi.messaging.GeoloqiHTTPRequest;
-import com.geoloqi.messaging.LQToken;
+import com.geoloqi.rpc.OAuthToken;
+import com.geoloqi.rpc.RPCBinder;
 import com.geoloqi.service.GeoloqiService;
 
 public class Geoloqi extends Activity implements OnClickListener {
@@ -50,8 +51,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 	// GUI Elements
 	private Button buttonStart, buttonSignup, buttonLayerCatalog, buttonShare;
-	private TextView latLabel, lngLabel, altLabel, spdLabel, accLabel,
-			numPointsLabel, accountLabel;
+	private TextView latLabel, lngLabel, altLabel, spdLabel, accLabel, numPointsLabel, accountLabel;
 	private Notification notification;
 	// End GUI Elements
 
@@ -69,15 +69,34 @@ public class Geoloqi extends Activity implements OnClickListener {
 		Util.logo();
 		super.onCreate(savedInstanceState);
 		buildGUI();
-
-		locationUpdateReceiver = new UIUpdateReceiver(this);
+		locationUpdateReceiver = new UIUpdateReceiver();
 		messengerUpdateReceiver = new MessengerUpdateReceiver();
-
 		this.runOnUiThread(new UpdateUI(null, null));
 
 		ImageView image = (ImageView) findViewById(R.id.geoloqiLogo);
 		image.setImageResource(R.drawable.geoloqi_300x100);
+		startService(new Intent(this, GeoloqiService.class));
+	}
+
+	@Override
+	public void onStart() {
+		IntentFilter filter = new IntentFilter(Intent.ACTION_EDIT);
+		filter.addDataScheme("geo");
+		filter.addDataAuthority("geoloqi.com", null);
+		filter.addDataPath(".*", PatternMatcher.PATTERN_SIMPLE_GLOB);
+		registerReceiver(locationUpdateReceiver, filter);
+		IntentFilter filter2 = new IntentFilter(Intent.ACTION_EDIT);
+		filter2.addDataScheme("mupdate");
+		filter2.addDataAuthority("geoloqi.com", null);
+		filter2.addDataPath(".*", PatternMatcher.PATTERN_SIMPLE_GLOB);
+		registerReceiver(messengerUpdateReceiver, filter2);
 		new LogIn().execute();
+		super.onStart();
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
 	}
 
 	@Override
@@ -86,10 +105,14 @@ public class Geoloqi extends Activity implements OnClickListener {
 	}
 
 	@Override
-	public void onResume() {
-		Log.i(TAG, "Resuming...");
-		super.onResume();
-		new LogIn().execute();
+	public void onStop() {
+		unregisterReceiver(locationUpdateReceiver);
+		super.onStop();
+	}
+
+	@Override
+	public void onRestart() {
+		super.onRestart();
 	}
 
 	@Override
@@ -131,6 +154,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	}
 
 	public void onClick(View src) {
+		Util.log("onClick!");
 		switch (src.getId()) {
 		case R.id.buttonStart:
 			if (!Util.isServiceRunning(this.getApplicationContext(), GeoloqiService.class.getName())) {
@@ -149,9 +173,12 @@ public class Geoloqi extends Activity implements OnClickListener {
 			this.showDialog(SIGNUP_DIALOG_ID);
 			break;
 		case R.id.buttonShare:
+			Util.log("Sharing!");
 			Intent sharing = new Intent(this, GeoloqiSharing.class);
 			startActivity(sharing);
 			break;
+		default:
+			Util.log("Couldn't land this click: " + src.getId());
 		}
 	}
 
@@ -241,7 +268,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				LQToken token = GeoloqiHTTPRequest.singleton().oauthToken(email.getText().toString(), pwd.getText().toString());
+				OAuthToken token = null;
+				try {
+					token = RPCBinder.singleton().getToken(email.getText().toString(), pwd.getText().toString(), null);
+				} catch (RemoteException e) {
+				}
 				Geoloqi.this.removeDialog(LOGIN_DIALOG_ID);
 				if (token == null) {
 					Toast.makeText(Geoloqi.this, "Error logging in", Toast.LENGTH_LONG).show();
@@ -286,7 +317,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		builder.setPositiveButton("Sign Up", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				LQToken token = GeoloqiHTTPRequest.singleton().createUser(email.getText().toString(), name.getText().toString());
+				OAuthToken token = null;
+				try {
+					token = RPCBinder.singleton().getToken(email.getText().toString(), name.getText().toString(), null);
+				} catch (RemoteException e) {
+				}
 				Geoloqi.this.removeDialog(SIGNUP_DIALOG_ID);
 				if (token == null) {
 					Toast.makeText(Geoloqi.this, "Error signing up", Toast.LENGTH_LONG).show();
@@ -316,16 +351,22 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		@Override
 		protected String doInBackground(Void... v) {
-			// Attempt to retrieve the username from the preferences
-			String storedUsername = Util.getUsername(Geoloqi.this);
-			// If it's not there, then make a server call to get the username
-			if (storedUsername == null || storedUsername.equals("")
-					|| storedUsername.equals("(anonymous)")) {
-				storedUsername = GeoloqiHTTPRequest.singleton().accountUsername(Geoloqi.this);
-				Util.setUsername(storedUsername, Geoloqi.this);
-				Log.i(TAG, ">>> got new username! " + storedUsername);
+			String username = Util.getUsername(Geoloqi.this);
+			if (username == null || username.equals("") || username.equals("(anonymous)")) {
+				OAuthToken token = Util.getToken(Geoloqi.this);
+				if (token == null) {
+					username = "(anonymous)";
+				} else {
+					try {
+						username = RPCBinder.singleton().getUsername(token);
+					} catch (RemoteException e) {
+						Util.log("RPC getUsername failed.  Logging in as anonymous.");
+						username = "(anonymous)";
+					}
+				}
 			}
-			return storedUsername;
+			Util.setUsername(username, Geoloqi.this);
+			return username;
 		}
 
 		// Runs with the return value of doInBackground, has access to the UI
@@ -333,7 +374,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		@Override
 		protected void onPostExecute(String newUsername) {
 			username = newUsername;
-			if (username == null || username.equals("(anonymous)")) {
+			if (username == null || username.equals("") || username.equals("(anonymous)")) {
 				accountLabel.setText("(not logged in)");
 				buttonShare.setVisibility(View.GONE);
 				buttonLayerCatalog.setVisibility(View.GONE);
@@ -349,42 +390,24 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 	private class UIUpdateReceiver extends GeoloqiReceiver {
 
-		UIUpdateReceiver(Context context) {
-			super(context);
+		UIUpdateReceiver() {
 		}
 
 		@Override
 		public void onReceive(Context context, Location location) {
 			runOnUiThread(new UpdateUI(location, null));
 		}
-
 	}
 
 	private class MessengerUpdateReceiver extends BroadcastReceiver {
 
 		MessengerUpdateReceiver() {
-			super();
-			IntentFilter filter = new IntentFilter(Intent.ACTION_EDIT);
-			filter.addDataScheme("mupdate");
-			filter.addDataAuthority("geoloqi.com", null);
-			filter.addDataPath(".*", PatternMatcher.PATTERN_SIMPLE_GLOB);
-			Geoloqi.this.registerReceiver(this, filter);
 		}
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			Integer unsentPointCount = Integer.parseInt(intent.getData().getPathSegments().get(0));
 			runOnUiThread(new UpdateUI(null, unsentPointCount));
-		}
-
-		@Override
-		public void finalize() throws Throwable {
-			try {
-				Util.log("MessengerReceiver going down.");
-				Geoloqi.this.unregisterReceiver(this);
-			} finally {
-				super.finalize();
-			}
 		}
 	}
 
@@ -415,8 +438,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 			if (unsentPointCount != null) {
 				numPointsLabel.setText("" + unsentPointCount);
 				CharSequence contentTitle = "Geoloqi";
-				CharSequence contentText = "speed: " + spdLabel.getText()
-						+ ", " + unsentPointCount + " points";
+				CharSequence contentText = "speed: " + spdLabel.getText() + ", " + unsentPointCount + " points";
 				Intent notificationIntent = new Intent(Geoloqi.this, Geoloqi.class);
 				PendingIntent contentIntent = PendingIntent.getActivity(Geoloqi.this, 0, notificationIntent, 0);
 				notification.flags = Notification.FLAG_ONGOING_EVENT;

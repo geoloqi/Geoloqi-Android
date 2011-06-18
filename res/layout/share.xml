@@ -3,7 +3,7 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:layout_height="fill_parent" android:orientation="vertical" android:layout_width="fill_parent">
     <TextView android:text="Message (optional)" android:layout_height="wrap_content" android:layout_width="fill_parent" android:id="@+id/textView1"></TextView>
-    <EditText android:text="Heading out!  Track me on Geoloqi!" android:layout_width="fill_parent" android:textSize="10pt" android:id="@+id/shareText" android:layout_height="wrap_content"></EditText>
-    <Spinner android:id="@+id/spinner1" android:layout_height="wrap_content" android:layout_width="fill_parent" android:prompt="@string/shareDurationPrompt"></Spinner>
+    <EditText android:text="Heading out!  Track me on Geoloqi!" android:layout_width="fill_parent" android:textSize="10pt" android:id="@+id/shareMessage" android:layout_height="wrap_content"></EditText>
+    <Spinner android:id="@+id/shareSpinner" android:layout_height="wrap_content" android:layout_width="fill_parent" android:prompt="@string/shareDurationPrompt"></Spinner>
     <Button android:layout_height="wrap_content" android:layout_width="fill_parent" android:id="@+id/buttonShare" android:text="Start Sharing!"></Button>
 </LinearLayout>
