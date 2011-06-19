@@ -2,6 +2,7 @@ package com.geoloqi.rpc;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.concurrent.Semaphore;
 
 import org.apache.http.Header;
 import org.apache.http.ParseException;
@@ -20,7 +21,7 @@ import com.geoloqi.GeoloqiConstants;
 import com.geoloqi.Util;
 import com.geoloqi.service.LocationCollection;
 
-public abstract class GeoloqiHTTPClient {
+public final class GeoloqiHTTPClient {
 
 	// Authorization State
 	private static final int LOGGED_OUT = 0;
@@ -34,15 +35,18 @@ public abstract class GeoloqiHTTPClient {
 	private static final HttpClient client = new DefaultHttpClient();
 	private static final String URL_BASE = "https://api.geoloqi.com/1/";
 
+	private static final Semaphore monitorLock = new Semaphore(1, true);
+
 	public static boolean isLoggedIn() {
 		return status != LOGGED_OUT;
 	}
 
 	public static boolean logIn(String username, String password) {
-		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "oauth/token");
-		request = request.entityParams(pair("grant_type", "password"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("username", username), pair("password", password));
-
+		monitorLock.acquireUninterruptibly();
 		try {
+			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "oauth/token");
+			request = request.entityParams(pair("grant_type", "password"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("username", username), pair("password", password));
+
 			JSONObject response = send(request);
 			token = new OAuthToken(response);
 			status = LOGGED_IN;
@@ -52,28 +56,30 @@ public abstract class GeoloqiHTTPClient {
 			return false;
 		} catch (JSONException e) {
 			throw new RuntimeException(" JSON Exception: " + e.getMessage());
+		} finally {
+			monitorLock.release();
 		}
 	}
 
 	public static boolean signUp(String email, String username) {
-		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "user/create");
-
-		request = request.params(pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("email", email), pair("name", username));
-
-		JSONObject response;
+		monitorLock.acquireUninterruptibly();
 		try {
+			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "user/create");
+
+			request = request.params(pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("email", email), pair("name", username));
+
+			JSONObject response;
 			response = send(request);
-		} catch (RPCException e) {
-			Util.log(e.getMessage());
-			return false;
-		}
-
-		try {
 			token = new OAuthToken(response);
 			status = LOGGED_IN;
 			return true;
+		} catch (RPCException e) {
+			Util.log(e.getMessage());
+			return false;
 		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
+		} finally {
+			monitorLock.release();
 		}
 	}
 
@@ -81,19 +87,19 @@ public abstract class GeoloqiHTTPClient {
 		if (status == LOGGED_OUT) {
 			return "";//FIXME Do we return "" or "(anonymous)?"
 		}
-		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "account/username").headers(header("Authorization", "OAuth " + token.accessToken));
-
-		JSONObject response;
+		monitorLock.acquireUninterruptibly();
 		try {
+			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "account/username").headers(header("Authorization", "OAuth " + token.accessToken));
+
+			JSONObject response;
 			response = send(request);
+			return response.getString("username");
 		} catch (RPCException e) {
 			throw new RuntimeException(e);
-		}
-
-		try {
-			return response.getString("username");
 		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
+		} finally {
+			monitorLock.release();
 		}
 	}
 
@@ -101,9 +107,10 @@ public abstract class GeoloqiHTTPClient {
 		if (status == LOGGED_OUT) {
 			return false;
 		}
-		String json = locations.toJSON();
-		MyRequest request;
+		monitorLock.acquireUninterruptibly();
 		try {
+			String json = locations.toJSON();
+			MyRequest request;
 			request = new MyRequest(MyRequest.POST, URL_BASE + "location/update").headers(header("Content-type", "application/json"), header("Authorization", "OAuth " + token.accessToken)).entity(new StringEntity(json, HTTP.UTF_8));
 			try {
 				send(request);
@@ -113,30 +120,34 @@ public abstract class GeoloqiHTTPClient {
 			return true;
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e.getMessage());
+		} finally {
+			monitorLock.release();
 		}
 	}
 
 	public static SharingLink postSharingLink(Integer minutes, String message) {
-
-		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "link/create");
-		request.headers(header("Authorization", "OAuth " + token.accessToken));
-		if (minutes == null) {
-			request.params(pair("minutes", "" + minutes), pair("description", message));
-		} else {
-			request.params(pair("description", message));
+		if (status == LOGGED_OUT) {
+			throw new RuntimeException("Cannot post sharing link.  Logged out.");
 		}
-
-		JSONObject response;
+		monitorLock.acquireUninterruptibly();
 		try {
+			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "link/create");
+			request.headers(header("Authorization", "OAuth " + token.accessToken));
+			if (minutes != null) {
+				request.entityParams(pair("minutes", "" + minutes), pair("description", message));
+			} else {
+				request.entityParams(pair("description", message));
+			}
+
+			JSONObject response;
 			response = send(request);
-		} catch (RPCException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-
-		try {
 			return new SharingLink(response);
 		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
+		} catch (RPCException e) {
+			throw new RuntimeException(e.getMessage());
+		} finally {
+			monitorLock.release();
 		}
 	}
 
