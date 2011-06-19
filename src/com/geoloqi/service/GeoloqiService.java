@@ -13,13 +13,12 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.util.Pair;
 import android.widget.Toast;
 
 import com.geoloqi.BatteryReceiver;
 import com.geoloqi.Util;
-import com.geoloqi.rpc.RPCBinder;
+import com.geoloqi.rpc.GeoloqiHTTPClient;
 
 public class GeoloqiService extends Service implements LocationListener {
 	private static Date lastUpdate;
@@ -136,9 +135,7 @@ public class GeoloqiService extends Service implements LocationListener {
 			while (running) {
 				rezendezvous.acquireUninterruptibly();
 				queue.transfer(backlog, regulator.getWindowSize());
-				if (Util.getToken(GeoloqiService.this) != null) {
-					sendData();
-				}
+				sendData();
 				queue.clear();
 				broadcastUnsentPointCount();
 			}
@@ -150,15 +147,11 @@ public class GeoloqiService extends Service implements LocationListener {
 			List<String> list = queue.toList();
 			boolean fullMessage = list.size() == regulator.getWindowSize();
 			while (!success && running) {
-				try {
-					RPCBinder.singleton().postLocationUpdate(Util.getToken(GeoloqiService.this), queue.toList());
-					success = true;
-					Util.log("Send Succeeded.");
-					if (fullMessage)
-						regulator.sendSucceeded();
-				} catch (RemoteException e) {
-					Util.log("Remote Exception in sendData: " + e.getMessage());
-				}
+				GeoloqiHTTPClient.postLocationUpdate(queue);
+				success = true;
+				Util.log("Send Succeeded.");
+				if (fullMessage)
+					regulator.sendSucceeded();
 			}
 		}
 	}

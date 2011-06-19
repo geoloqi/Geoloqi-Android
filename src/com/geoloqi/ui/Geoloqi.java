@@ -20,7 +20,6 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PatternMatcher;
-import android.os.RemoteException;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -38,8 +37,7 @@ import com.geoloqi.GeoloqiPreferences;
 import com.geoloqi.GeoloqiReceiver;
 import com.geoloqi.Util;
 import com.geoloqi.android2.R;
-import com.geoloqi.rpc.OAuthToken;
-import com.geoloqi.rpc.RPCBinder;
+import com.geoloqi.rpc.GeoloqiHTTPClient;
 import com.geoloqi.service.GeoloqiService;
 
 public class Geoloqi extends Activity implements OnClickListener {
@@ -55,10 +53,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	private Notification notification;
 	// End GUI Elements
 
-	@SuppressWarnings("unused")
 	private BroadcastReceiver locationUpdateReceiver, messengerUpdateReceiver;
-
-	private String username;
 	private Location lastLocation = new Location("Geoloqi");
 
 	// private Integer lastUnsentPointCountDebug = 0;
@@ -75,7 +70,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		ImageView image = (ImageView) findViewById(R.id.geoloqiLogo);
 		image.setImageResource(R.drawable.geoloqi_300x100);
-		startService(new Intent(this, GeoloqiService.class));
 	}
 
 	@Override
@@ -154,7 +148,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 	}
 
 	public void onClick(View src) {
-		Util.log("onClick!");
 		switch (src.getId()) {
 		case R.id.buttonStart:
 			if (!Util.isServiceRunning(this.getApplicationContext(), GeoloqiService.class.getName())) {
@@ -173,12 +166,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 			this.showDialog(SIGNUP_DIALOG_ID);
 			break;
 		case R.id.buttonShare:
-			Util.log("Sharing!");
 			Intent sharing = new Intent(this, GeoloqiSharing.class);
 			startActivity(sharing);
 			break;
-		default:
-			Util.log("Couldn't land this click: " + src.getId());
 		}
 	}
 
@@ -216,6 +206,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		buttonStart.setOnClickListener(this);
 		buttonSignup.setOnClickListener(this);
 		buttonLayerCatalog.setOnClickListener(this);
+		buttonShare.setOnClickListener(this);
 
 		// Initialize the notification.
 		CharSequence tickerText;
@@ -253,8 +244,8 @@ public class Geoloqi extends Activity implements OnClickListener {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setView(layout);
 
-		if (username != null) {
-			account.setText("Currently logged in as " + username);
+		if (GeoloqiHTTPClient.isLoggedIn()) {
+			account.setText("Currently logged in as " + GeoloqiHTTPClient.getUsername());
 			builder.setTitle("Change Account");
 		} else {
 			builder.setTitle("Log In");
@@ -268,21 +259,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				OAuthToken token = null;
-				try {
-					token = RPCBinder.singleton().getToken(email.getText().toString(), pwd.getText().toString(), null);
-				} catch (RemoteException e) {
-				}
-				Geoloqi.this.removeDialog(LOGIN_DIALOG_ID);
-				if (token == null) {
-					Toast.makeText(Geoloqi.this, "Error logging in", Toast.LENGTH_LONG).show();
-				} else {
-					Util.setToken(token, Geoloqi.this);
-					Log.d(Geoloqi.TAG, "Got access token: " + token.toString());
+				if (GeoloqiHTTPClient.logIn(email.getText().toString(), pwd.getText().toString())) {
 					Toast.makeText(Geoloqi.this, "Logged in!", Toast.LENGTH_LONG).show();
-					username = null;
-					Util.setUsername(null, Geoloqi.this);
 					new LogIn().execute();
+				} else {
+					Toast.makeText(Geoloqi.this, "Error logging in", Toast.LENGTH_LONG).show();
 				}
 			}
 		});
@@ -317,22 +298,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		builder.setPositiveButton("Sign Up", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				OAuthToken token = null;
-				try {
-					token = RPCBinder.singleton().getToken(email.getText().toString(), name.getText().toString(), null);
-				} catch (RemoteException e) {
+				if (GeoloqiHTTPClient.signUp(email.getText().toString(), name.getText().toString())) {
+					Toast.makeText(Geoloqi.this, "Success! Check your email!", Toast.LENGTH_LONG).show();
+					new LogIn().execute();
+				} else {
+					Toast.makeText(Geoloqi.this, "Error signing up", Toast.LENGTH_LONG).show();
 				}
 				Geoloqi.this.removeDialog(SIGNUP_DIALOG_ID);
-				if (token == null) {
-					Toast.makeText(Geoloqi.this, "Error signing up", Toast.LENGTH_LONG).show();
-				} else {
-					Util.setToken(token, Geoloqi.this);
-					Log.d(Geoloqi.TAG, "Got access token: " + token.toString());
-					Toast.makeText(Geoloqi.this, "Success! Check your email!", Toast.LENGTH_LONG).show();
-					username = null;
-					Util.setUsername(null, Geoloqi.this);
-					new LogIn().execute();
-				}
 			}
 		});
 
@@ -351,29 +323,13 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		@Override
 		protected String doInBackground(Void... v) {
-			String username = Util.getUsername(Geoloqi.this);
-			if (username == null || username.equals("") || username.equals("(anonymous)")) {
-				OAuthToken token = Util.getToken(Geoloqi.this);
-				if (token == null) {
-					username = "(anonymous)";
-				} else {
-					try {
-						username = RPCBinder.singleton().getUsername(token);
-					} catch (RemoteException e) {
-						Util.log("RPC getUsername failed.  Logging in as anonymous.");
-						username = "(anonymous)";
-					}
-				}
-			}
-			Util.setUsername(username, Geoloqi.this);
-			return username;
+			return GeoloqiHTTPClient.getUsername();
 		}
 
 		// Runs with the return value of doInBackground, has access to the UI
 		// thread
 		@Override
-		protected void onPostExecute(String newUsername) {
-			username = newUsername;
+		protected void onPostExecute(String username) {
 			if (username == null || username.equals("") || username.equals("(anonymous)")) {
 				accountLabel.setText("(not logged in)");
 				buttonShare.setVisibility(View.GONE);
@@ -453,14 +409,14 @@ public class Geoloqi extends Activity implements OnClickListener {
 			// Util.logMainInterface(lastLocation, lastUnsentPointCountDebug,
 			// loggedIn, tracking);
 
-			if (username == null || username.equals("(anonymous)")) {
+			if (GeoloqiHTTPClient.isLoggedIn()) {
+				accountLabel.setText(GeoloqiHTTPClient.getUsername());
+				buttonLayerCatalog.setVisibility(View.VISIBLE);
+				buttonSignup.setVisibility(View.GONE);
+			} else {
 				accountLabel.setText("(not logged in)");
 				buttonLayerCatalog.setVisibility(View.GONE);
 				buttonSignup.setVisibility(View.VISIBLE);
-			} else {
-				accountLabel.setText(username);
-				buttonLayerCatalog.setVisibility(View.VISIBLE);
-				buttonSignup.setVisibility(View.GONE);
 			}
 
 		}

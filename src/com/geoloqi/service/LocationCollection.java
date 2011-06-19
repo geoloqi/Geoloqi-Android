@@ -19,8 +19,9 @@ import android.location.Location;
 import android.util.Pair;
 
 import com.geoloqi.Util;
+import com.geoloqi.rpc.GeoloqiHTTPClient;
 
-class LocationCollection extends SQLiteOpenHelper {
+public class LocationCollection extends SQLiteOpenHelper {
 
 	ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 	Context context;
@@ -67,13 +68,10 @@ class LocationCollection extends SQLiteOpenHelper {
 				} while (!cursor.isAfterLast());
 			}
 
-			Cursor cursorr = collection.db.rawQuery("SELECT * FROM " + collection.name + " WHERE _ID IN (SELECT _ID FROM " + collection.name + " ORDER BY _ID ASC LIMIT " + count + ")", null);
-			Util.log("query got " + cursor.getCount());
-			cursorr.close();
-
 			collection.db.execSQL("DELETE FROM " + collection.name + " WHERE _ID IN (SELECT _ID FROM " + collection.name + " ORDER BY _ID ASC LIMIT " + count + ")");
-			collection.db.endTransaction();
+			collection.db.setTransactionSuccessful();
 		} finally {
+			collection.db.endTransaction();
 			cursor.close();
 			lock.writeLock().unlock();
 			collection.lock.writeLock().unlock();
@@ -98,6 +96,16 @@ class LocationCollection extends SQLiteOpenHelper {
 			cursor.close();
 			lock.readLock().unlock();
 		}
+	}
+
+	public String toJSON() {
+		List<String> locations = toList();
+		String json = "[" + locations.remove(0);
+		for (String s : locations) {
+			json += "," + s;
+		}
+		json += "]";
+		return json;
 	}
 
 	public void clear() {
@@ -132,7 +140,7 @@ class LocationCollection extends SQLiteOpenHelper {
 
 	protected JSONObject toJSON(Location l, Pair<String, String>[] rawr) {
 		try {
-			String name = Util.getUsername(context);
+			String name = GeoloqiHTTPClient.getUsername();
 			String version = Util.getVersion();
 			String platform = "2.1";
 			String hardware = "unknown";

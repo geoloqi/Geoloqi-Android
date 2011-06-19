@@ -5,6 +5,7 @@
     <string name="sending">Sending points to the server!</string>
     <string name="preferences">Preferences</string>
     <string name="layerCatalog">Layer Catalog</string>
+    <string name="sharing">Location Sharing</string>
     <string name="shareDurationPrompt">Duration</string>
 	<!-- Preferences -->
     <string name="tracking_settings">Tracking Settings</string>

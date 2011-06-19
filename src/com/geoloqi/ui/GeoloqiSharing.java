@@ -1,6 +1,7 @@
 package com.geoloqi.ui;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -11,6 +12,8 @@ import android.widget.Spinner;
 
 import com.geoloqi.Util;
 import com.geoloqi.android2.R;
+import com.geoloqi.rpc.GeoloqiHTTPClient;
+import com.geoloqi.rpc.SharingLink;
 
 public class GeoloqiSharing extends Activity implements OnClickListener {
 
@@ -22,7 +25,11 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		buildGUI(savedInstanceState.getString("message"));
+		if (savedInstanceState != null && savedInstanceState.containsKey("message")) {
+			buildGUI(savedInstanceState.getString("message"));
+		} else {
+			buildGUI("Heading out.  Track me on Geoloqi!");
+		}
 		super.onCreate(savedInstanceState);
 	}
 
@@ -66,6 +73,37 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 			Object item = shareSpinner.getSelectedItem();
 			Util.log("Message is: " + message);
 			Util.log("Selection is: " + item);
+			Integer time;
+			if (message == "no time limit") {
+				time = null;
+			} else if (message == "10 minutes") {
+				time = 10;
+			} else if (message == "20 minutes") {
+				time = 20;
+			} else if (message == "30 minutes") {
+				time = 30;
+			} else if (message == "1 hour") {
+				time = 60;
+			} else if (message == "2 hours") {
+				time = 120;
+			} else if (message == "4 hours") {
+				time = 240;
+			} else if (message == "8 hours") {
+				time = 480;
+			} else if (message == "24 hours") {
+				time = 3600;
+			} else if (message == "4 days") {
+				time = 14400;
+			} else if (message == "7 days") {
+				time = 25200;
+			} else {
+				time = 10;
+			}
+
+			SharingLink link = GeoloqiHTTPClient.postSharingLink(time, message);
+			Intent shareIntent = new Intent("SHARING_LINK", link.shortLink);
+			sendBroadcast(shareIntent);
+			finish();
 		}
 
 	}
