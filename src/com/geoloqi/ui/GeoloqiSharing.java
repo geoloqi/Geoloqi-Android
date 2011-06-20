@@ -9,10 +9,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.geoloqi.Util;
 import com.geoloqi.android2.R;
 import com.geoloqi.rpc.GeoloqiHTTPClient;
+import com.geoloqi.rpc.RPCException;
 import com.geoloqi.rpc.SharingLink;
 
 public class GeoloqiSharing extends Activity implements OnClickListener {
@@ -70,39 +72,46 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 	public void onClick(View src) {
 		if (src.getId() == R.id.buttonShare) {
 			String message = shareMessage.getText().toString();
-			Object item = shareSpinner.getSelectedItem();
+			String item = (String) shareSpinner.getSelectedItem();
 			Util.log("Message is: " + message);
 			Util.log("Selection is: " + item);
 			Integer time;
-			if (message == "no time limit") {
+			if (item == "no time limit") {
 				time = null;
-			} else if (message == "10 minutes") {
+			} else if (item == "10 minutes") {
 				time = 10;
-			} else if (message == "20 minutes") {
+			} else if (item == "20 minutes") {
 				time = 20;
-			} else if (message == "30 minutes") {
+			} else if (item == "30 minutes") {
 				time = 30;
-			} else if (message == "1 hour") {
+			} else if (item == "1 hour") {
 				time = 60;
-			} else if (message == "2 hours") {
+			} else if (item == "2 hours") {
 				time = 120;
-			} else if (message == "4 hours") {
+			} else if (item == "4 hours") {
 				time = 240;
-			} else if (message == "8 hours") {
+			} else if (item == "8 hours") {
 				time = 480;
-			} else if (message == "24 hours") {
+			} else if (item == "24 hours") {
 				time = 3600;
-			} else if (message == "4 days") {
+			} else if (item == "4 days") {
 				time = 14400;
-			} else if (message == "7 days") {
+			} else if (item == "7 days") {
 				time = 25200;
 			} else {
 				time = 10;
 			}
 
-			SharingLink link = GeoloqiHTTPClient.postSharingLink(time, message);
-			Intent shareIntent = new Intent("SHARING_LINK", link.shortLink);
-			sendBroadcast(shareIntent);
+			SharingLink link;
+			try {
+				link = GeoloqiHTTPClient.postSharingLink(this, time, message);
+				Intent shareIntent = new Intent(Intent.ACTION_SEND);
+				shareIntent.putExtra(Intent.EXTRA_TEXT, message + " " + link.shortLink);
+				sendBroadcast(shareIntent);
+			} catch (RPCException e) {
+				Util.log("Error in Geoloqi Sharing: " + e.getMessage());
+				Toast.makeText(this, "An error occurred.", Toast.LENGTH_LONG);
+			}
 			finish();
 		}
 

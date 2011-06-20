@@ -140,7 +140,7 @@ public class LocationCollection extends SQLiteOpenHelper {
 
 	protected JSONObject toJSON(Location l, Pair<String, String>[] rawr) {
 		try {
-			String name = GeoloqiHTTPClient.getUsername();
+			String name = GeoloqiHTTPClient.getUsername(context);
 			String version = Util.getVersion();
 			String platform = "2.1";
 			String hardware = "unknown";

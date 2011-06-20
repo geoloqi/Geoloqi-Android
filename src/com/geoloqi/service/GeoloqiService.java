@@ -147,7 +147,7 @@ public class GeoloqiService extends Service implements LocationListener {
 			List<String> list = queue.toList();
 			boolean fullMessage = list.size() == regulator.getWindowSize();
 			while (!success && running) {
-				GeoloqiHTTPClient.postLocationUpdate(queue);
+				GeoloqiHTTPClient.postLocationUpdate(GeoloqiService.this, queue);
 				success = true;
 				Util.log("Send Succeeded.");
 				if (fullMessage)

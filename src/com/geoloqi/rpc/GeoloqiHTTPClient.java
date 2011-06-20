@@ -17,51 +17,50 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+
 import com.geoloqi.GeoloqiConstants;
 import com.geoloqi.Util;
 import com.geoloqi.service.LocationCollection;
 
 public final class GeoloqiHTTPClient {
 
-	// Authorization State
-	private static final int LOGGED_OUT = 0;
-	@SuppressWarnings("unused")
-	private static final int ANONYMOUS = 1;
-	private static final int LOGGED_IN = 2;
-	private static int status = LOGGED_OUT;
-	private static OAuthToken token = null;
-	// End Authorization State
-
 	private static final HttpClient client = new DefaultHttpClient();
 	private static final String URL_BASE = "https://api.geoloqi.com/1/";
+	private static final String PREFERENCES_FILE = "GEOLOQIHTTPCLIENT";
 
 	private static final Semaphore monitorLock = new Semaphore(1, true);
 
-	public static boolean isLoggedIn() {
-		return status != LOGGED_OUT;
-	}
-
-	public static boolean logIn(String username, String password) {
-		monitorLock.acquireUninterruptibly();
+	public static boolean isConnected(Context context) {
 		try {
-			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "oauth/token");
-			request = request.entityParams(pair("grant_type", "password"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("username", username), pair("password", password));
-
-			JSONObject response = send(request);
-			token = new OAuthToken(response);
-			status = LOGGED_IN;
-			return true;
+			beLoggedIn(context);
 		} catch (RPCException e) {
-			Util.log("RPC Exception: " + e.getMessage());
 			return false;
-		} catch (JSONException e) {
-			throw new RuntimeException(" JSON Exception: " + e.getMessage());
-		} finally {
-			monitorLock.release();
 		}
+		return true;
 	}
 
-	public static boolean signUp(String email, String username) {
+	public static boolean isAnonymous(Context context) {
+		try {
+			beLoggedIn(context);
+		} catch (RPCException e) {
+			return false;
+		}
+		return context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).getString("username", "").startsWith("_");
+	}
+
+	public static boolean isLoggedIn(Context context) {
+		try {
+			beLoggedIn(context);
+		} catch (RPCException e) {
+			return false;
+		}
+		return !context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).getString("username", "_").startsWith("_");
+	}
+
+	public static boolean signUp(Context context, String email, String username) {
 		monitorLock.acquireUninterruptibly();
 		try {
 			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "user/create");
@@ -70,8 +69,7 @@ public final class GeoloqiHTTPClient {
 
 			JSONObject response;
 			response = send(request);
-			token = new OAuthToken(response);
-			status = LOGGED_IN;
+			saveToken(context, new OAuthToken(response));
 			return true;
 		} catch (RPCException e) {
 			Util.log(e.getMessage());
@@ -83,176 +81,152 @@ public final class GeoloqiHTTPClient {
 		}
 	}
 
-	public static String getUsername() {
-		if (status == LOGGED_OUT) {
-			return "";//FIXME Do we return "" or "(anonymous)?"
-		}
+	public static boolean logIn(Context context, String username, String password) {
 		monitorLock.acquireUninterruptibly();
 		try {
-			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "account/username").headers(header("Authorization", "OAuth " + token.accessToken));
+			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "oauth/token");
+			request = request.entityParams(pair("grant_type", "password"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("username", username), pair("password", password));
 
-			JSONObject response;
-			response = send(request);
-			return response.getString("username");
+			JSONObject response = send(request);
+			OAuthToken token = new OAuthToken(response);
+			Util.log("Got token: " + token);
+			saveToken(context, token);
+			return true;
 		} catch (RPCException e) {
-			throw new RuntimeException(e);
+			Util.log("RPC Exception: " + e.getMessage());
+			return false;
 		} catch (JSONException e) {
-			throw new RuntimeException(e.getMessage());
+			throw new RuntimeException(" JSON Exception: " + e.getMessage());
 		} finally {
 			monitorLock.release();
 		}
 	}
 
-	public static boolean postLocationUpdate(LocationCollection locations) {
-		if (status == LOGGED_OUT) {
+	public static String getUsername(Context context) {
+		try {
+			beLoggedIn(context);
+		} catch (RPCException e) {
+			return "(not logged in)";
+		}
+		String username = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).getString("username", null);
+		Util.log("username is " + username);
+		if (username.startsWith("_")) {
+			return "(anonymous)";
+		} else {
+			return username;
+		}
+	}
+
+	public static boolean postLocationUpdate(Context context, LocationCollection locations) {
+		try {
+			beLoggedIn(context);
+		} catch (RPCException e) {
 			return false;
 		}
-		monitorLock.acquireUninterruptibly();
+
+		MyRequest request;
 		try {
+			String accessToken = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).getString("accessToken", null);
 			String json = locations.toJSON();
-			MyRequest request;
-			request = new MyRequest(MyRequest.POST, URL_BASE + "location/update").headers(header("Content-type", "application/json"), header("Authorization", "OAuth " + token.accessToken)).entity(new StringEntity(json, HTTP.UTF_8));
-			try {
-				send(request);
-			} catch (RPCException e) {
-				throw new RuntimeException(e);
-			}
-			return true;
+			request = new MyRequest(MyRequest.POST, URL_BASE + "location/update").headers(header("Content-type", "application/json"), header("Authorization", "OAuth " + accessToken)).entity(new StringEntity(json, HTTP.UTF_8));
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e.getMessage());
+		}
+
+		boolean tryAgain = false;
+
+		monitorLock.acquireUninterruptibly();
+		try {
+			send(request);
+		} catch (RPCException e) {
+			if (e.getMessage() == "expired_token") {
+				try {
+					refreshToken(context);
+					tryAgain = true;
+				} catch (RPCException e1) {
+					Util.log("RPCException in refreshToken, called by postLocationUpdate: " + e.getMessage());
+					return false;
+				}
+			} else {
+				Util.log("RPCException in postLocationUpdate: " + e.getMessage());
+				return false;
+			}
 		} finally {
 			monitorLock.release();
 		}
+
+		if (tryAgain) {
+			return postLocationUpdate(context, locations);
+		} else {
+			return true;
+		}
 	}
 
-	public static SharingLink postSharingLink(Integer minutes, String message) {
-		if (status == LOGGED_OUT) {
-			throw new RuntimeException("Cannot post sharing link.  Logged out.");
+	public static SharingLink postSharingLink(Context context, Integer minutes, String message) throws RPCException {
+		beLoggedIn(context);
+		String token = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).getString("accessToken", null);
+
+		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "link/create");
+		request.headers(header("Authorization", "OAuth " + token));
+		if (minutes != null) {
+			request.entityParams(pair("minutes", "" + minutes), pair("description", message));
+		} else {
+			request.entityParams(pair("description", message));
 		}
+
 		monitorLock.acquireUninterruptibly();
 		try {
-			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "link/create");
-			request.headers(header("Authorization", "OAuth " + token.accessToken));
-			if (minutes != null) {
-				request.entityParams(pair("minutes", "" + minutes), pair("description", message));
-			} else {
-				request.entityParams(pair("description", message));
-			}
-
-			JSONObject response;
-			response = send(request);
+			JSONObject response = send(request);
 			return new SharingLink(response);
 		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
 		} catch (RPCException e) {
+			if (e.getMessage() == "expired_token") {
+				try {
+					refreshToken(context);
+				} catch (RPCException e1) {
+					throw new RPCException("postSharingLink could not refresh the token: excepted with: " + e1.getMessage());
+				}
+			} else {
+				throw new RuntimeException(e.getMessage());
+			}
+		} finally {
+			monitorLock.release();
+		}
+
+		return postSharingLink(context, minutes, message);
+	}
+
+	protected static void beLoggedIn(Context context) throws RPCException {
+		if (!context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).contains("accessToken")) {
+			createAnonymousAccount(context);
+		}
+	}
+
+	protected static void createAnonymousAccount(Context context) throws RPCException {
+		monitorLock.acquireUninterruptibly();
+		try {
+			MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "user/create_anon");
+			request = request.entityParams(pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
+
+			JSONObject response;
+			response = send(request);
+			saveToken(context, new OAuthToken(response));
+		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
 		} finally {
 			monitorLock.release();
 		}
 	}
 
-	//
-	//	public String getUsername(OAuthToken token) throws RemoteException {
-	//		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "account/username").headers(header("Authorization", "OAuth " + token.accessToken));
-	//
-	//		JSONObject response = request.send();
-	//
-	//		try {
-	//			Util.log(response.toString());
-	//			return response.getString("username");
-	//		} catch (JSONException e) {
-	//			Util.log("getUsername: JSONException: " + e.getMessage());
-	//			throw new RemoteException();
-	//		}
-	//	}
-	//
-	//	public OAuthToken createAccount(String username, String email) throws RemoteException {
-	//		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "user/create");
-	//
-	//		request = request.params(pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("email", email), pair("name", username));
-	//
-	//		JSONObject response = request.send();
-	//		try {
-	//			return new OAuthToken(response);
-	//		} catch (JSONException e) {
-	//			Util.log("createAccount: JSONException: " + e.getMessage());
-	//			throw new RemoteException();
-	//		}
-	//	}
-	//
-	//	public SharingLink postSharingLink(OAuthToken token, String message, long start, long end, boolean recurring) throws RemoteException {
-	//
-	//		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "link/create");
-	//		request.headers(header("Authorization", "OAuth " + token.accessToken));
-	//
-	//		if (message != null) {
-	//			if (recurring) {
-	//				request = request.params(pair("time_from", "" + start), pair("time_to", "" + end), pair("message", message));
-	//			} else {
-	//				request = request.params(pair("date_from", "" + start), pair("date_to", "" + end), pair("message", message));
-	//			}
-	//		} else {
-	//			if (recurring) {
-	//				request = request.params(pair("time_from", "" + start), pair("time_to", "" + end));
-	//			} else {
-	//				request = request.params(pair("date_from", "" + start), pair("date_to", "" + end));
-	//			}
-	//		}
-	//
-	//		JSONObject response = request.send();
-	//
-	//		try {
-	//			return new SharingLink(response);
-	//		} catch (JSONException e) {
-	//			Util.log("postSharingLink: JSON Exception: " + e.getMessage());
-	//			throw new RemoteException();
-	//		}
-	//	}
-	//
-	//	protected OAuthToken getToken(String username, String password, String refreshToken) throws RemoteException {
-	//		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "oauth/token");
-	//		ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
-	//		if (refreshToken != null) {
-	//			request = request.params(pair("grant_type", "refresh_token"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("refresh_token", refreshToken));
-	//			params.add(new BasicNameValuePair("grant_type", "refresh_token"));
-	//			params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
-	//			params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
-	//			params.add(new BasicNameValuePair("refresh_token", refreshToken));
-	//		} else if (username != null && password != null) {
-	//			params.add(new BasicNameValuePair("grant_type", "password"));
-	//			params.add(new BasicNameValuePair("client_id", GeoloqiConstants.GEOLOQI_ID));
-	//			params.add(new BasicNameValuePair("client_secret", GeoloqiConstants.GEOLOQI_SECRET));
-	//			params.add(new BasicNameValuePair("username", username));
-	//			params.add(new BasicNameValuePair("password", password));
-	//		} else {
-	//			Util.log("getToken: Insufficient information.");
-	//			throw new RemoteException();
-	//		}
-	//
-	//		// Attach the params as an entity
-	//		try {
-	//			request.entity(new UrlEncodedFormEntity(params));
-	//		} catch (UnsupportedEncodingException e) {
-	//			Util.log("getToken: Unsupported Encoding Exception: " + e.getMessage());
-	//			throw new RemoteException();
-	//		}
-	//
-	//		JSONObject response = request.send();
-	//
-	//		try {
-	//			return new OAuthToken(response);
-	//		} catch (JSONException e) {
-	//			Util.log("getToken: JSON Exception: " + e.getMessage());
-	//			throw new RemoteException();
-	//		}
-	//	}
-
-	protected static boolean refreshToken() {
-		if (token == null) {
-			throw new RuntimeException("Token is null");
+	protected static void refreshToken(Context context) throws RPCException {
+		if (!isLoggedIn(context)) {
+			createAnonymousAccount(context);
+			return;
 		}
 		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "oauth/token");
-		request = request.entityParams(pair("grant_type", "refresh_token"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("refresh_token", token.refreshToken));
+		String refreshToken = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).getString("refreshToken", null);
+		request = request.entityParams(pair("grant_type", "refresh_token"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("refresh_token", refreshToken));
 		// Attach the params as an entity
 
 		try {
@@ -260,10 +234,50 @@ public final class GeoloqiHTTPClient {
 		} catch (RPCException e) {
 			throw new RuntimeException(e.getMessage());
 		}
-		return true;
 	}
 
-	private static JSONObject send(MyRequest request) throws RPCException {
+	protected static void saveToken(Context context, OAuthToken token) {
+		Editor editor = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).edit();
+		editor.putString("username", token.username);
+		editor.putString("accessToken", token.accessToken);
+		editor.putString("refreshToken", token.refreshToken);
+		editor.putLong("expiresIn", token.expiresIn);
+		editor.putLong("expiresAt", token.expiresAt);
+		editor.putString("scope", token.scope);
+		editor.commit();
+	}
+
+	protected static OAuthToken loadToken(Context context) throws Exception {
+		SharedPreferences preferences = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE);
+
+		// The token has been set previously, or access token is null. 
+		String accessToken = preferences.getString("accessToken", null);
+		if (accessToken == null) {
+			throw new Exception("Token is null");
+		}
+		// The token has been set previously.
+
+		String username = preferences.getString("username", null);
+		String refreshToken = preferences.getString("refreshToken", null);
+		Long expiresIn = preferences.getLong("expiresIn", 0);
+		Long expiresAt = preferences.getLong("expiresAt", 0);
+		String scope = preferences.getString("scope", null);
+
+		return new OAuthToken(username, accessToken, refreshToken, expiresIn, expiresAt, scope);
+	}
+
+	protected static void deleteToken(Context context) throws Exception {
+		Editor editor = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).edit();
+		editor.remove("username");
+		editor.remove("accessToken");
+		editor.remove("refreshToken");
+		editor.remove("expiresIn");
+		editor.remove("expiresAt");
+		editor.remove("scope");
+		editor.commit();
+	}
+
+	protected static JSONObject send(MyRequest request) throws RPCException {
 		JSONObject response;
 		try {
 			response = new JSONObject(EntityUtils.toString(client.execute(request.request).getEntity()));

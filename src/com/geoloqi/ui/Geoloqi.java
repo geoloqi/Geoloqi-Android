@@ -17,7 +17,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PatternMatcher;
 import android.util.Log;
@@ -84,7 +83,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 		filter2.addDataAuthority("geoloqi.com", null);
 		filter2.addDataPath(".*", PatternMatcher.PATTERN_SIMPLE_GLOB);
 		registerReceiver(messengerUpdateReceiver, filter2);
-		new LogIn().execute();
+		this.runOnUiThread(new UpdateUI(null, null));
 		super.onStart();
 	}
 
@@ -244,8 +243,8 @@ public class Geoloqi extends Activity implements OnClickListener {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setView(layout);
 
-		if (GeoloqiHTTPClient.isLoggedIn()) {
-			account.setText("Currently logged in as " + GeoloqiHTTPClient.getUsername());
+		if (GeoloqiHTTPClient.isLoggedIn(Geoloqi.this)) {
+			account.setText("Currently logged in as " + GeoloqiHTTPClient.getUsername(Geoloqi.this));
 			builder.setTitle("Change Account");
 		} else {
 			builder.setTitle("Log In");
@@ -259,9 +258,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		builder.setPositiveButton("Log In", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				if (GeoloqiHTTPClient.logIn(email.getText().toString(), pwd.getText().toString())) {
+				if (GeoloqiHTTPClient.logIn(Geoloqi.this, email.getText().toString(), pwd.getText().toString())) {
 					Toast.makeText(Geoloqi.this, "Logged in!", Toast.LENGTH_LONG).show();
-					new LogIn().execute();
+					runOnUiThread(new UpdateUI(null, null));
 				} else {
 					Toast.makeText(Geoloqi.this, "Error logging in", Toast.LENGTH_LONG).show();
 				}
@@ -298,9 +297,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		builder.setPositiveButton("Sign Up", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				if (GeoloqiHTTPClient.signUp(email.getText().toString(), name.getText().toString())) {
+				if (GeoloqiHTTPClient.signUp(Geoloqi.this, email.getText().toString(), name.getText().toString())) {
 					Toast.makeText(Geoloqi.this, "Success! Check your email!", Toast.LENGTH_LONG).show();
-					new LogIn().execute();
+					runOnUiThread(new UpdateUI(null, null));
 				} else {
 					Toast.makeText(Geoloqi.this, "Error signing up", Toast.LENGTH_LONG).show();
 				}
@@ -319,30 +318,29 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 	// END GUI BUILDERS
 
-	private class LogIn extends AsyncTask<Void, Void, String> {
-
-		@Override
-		protected String doInBackground(Void... v) {
-			return GeoloqiHTTPClient.getUsername();
-		}
-
-		// Runs with the return value of doInBackground, has access to the UI
-		// thread
-		@Override
-		protected void onPostExecute(String username) {
-			if (username == null || username.equals("") || username.equals("(anonymous)")) {
-				accountLabel.setText("(not logged in)");
-				buttonShare.setVisibility(View.GONE);
-				buttonLayerCatalog.setVisibility(View.GONE);
-				buttonSignup.setVisibility(View.VISIBLE);
-			} else {
-				accountLabel.setText(username);
-				buttonShare.setVisibility(View.VISIBLE);
-				buttonLayerCatalog.setVisibility(View.VISIBLE);
-				buttonSignup.setVisibility(View.GONE);
-			}
-		}
-	}
+	//	private class LogIn extends AsyncTask<Void, Void, String> {
+	//
+	//		@Override
+	//		protected String doInBackground(Void... v) {
+	//			return GeoloqiHTTPClient.getUsername(Geoloqi.this);//FIXME
+	//		}
+	//
+	//		// Runs with the return value of doInBackground, has access to the UI thread
+	//		@Override
+	//		protected void onPostExecute(String username) {
+	//			Util.log("Logged in as " + username);
+	//			accountLabel.setText(username);
+	//			if (username == "(anonymous)") {
+	//				buttonShare.setVisibility(View.GONE);
+	//				buttonLayerCatalog.setVisibility(View.GONE);
+	//				buttonSignup.setVisibility(View.VISIBLE);
+	//			} else {
+	//				buttonShare.setVisibility(View.VISIBLE);
+	//				buttonLayerCatalog.setVisibility(View.VISIBLE);
+	//				buttonSignup.setVisibility(View.GONE);
+	//			}
+	//		}
+	//	}
 
 	private class UIUpdateReceiver extends GeoloqiReceiver {
 
@@ -402,21 +400,25 @@ public class Geoloqi extends Activity implements OnClickListener {
 				((NotificationManager) Geoloqi.this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
 				// lastUnsentPointCountDebug = unsentPointCount;
 			}
-
 			// boolean loggedIn = username != null || username != "(anonymous)";
 			// boolean tracking = Util.isServiceRunning(Geoloqi.this,GeoloqiService.class.getName());
 			//
 			// Util.logMainInterface(lastLocation, lastUnsentPointCountDebug,
 			// loggedIn, tracking);
 
-			if (GeoloqiHTTPClient.isLoggedIn()) {
-				accountLabel.setText(GeoloqiHTTPClient.getUsername());
-				buttonLayerCatalog.setVisibility(View.VISIBLE);
-				buttonSignup.setVisibility(View.GONE);
-			} else {
-				accountLabel.setText("(not logged in)");
+			String username = GeoloqiHTTPClient.getUsername(Geoloqi.this);
+			accountLabel.setText(username);
+
+			if (username == "(not logged in)" || username == "(anonymous)") {
+				Util.log("User is anonymous or not logged in.");
 				buttonLayerCatalog.setVisibility(View.GONE);
 				buttonSignup.setVisibility(View.VISIBLE);
+				buttonShare.setVisibility(View.GONE);
+			} else {
+				Util.log("User is logged in.");
+				buttonLayerCatalog.setVisibility(View.VISIBLE);
+				buttonSignup.setVisibility(View.GONE);
+				buttonShare.setVisibility(View.VISIBLE);
 			}
 
 		}
