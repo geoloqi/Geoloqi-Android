@@ -1,6 +1,7 @@
 package com.geoloqi.ui;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -104,7 +105,9 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 
 			SharingLink link;
 			try {
+				ProgressDialog progressDialog = ProgressDialog.show(this, "Working...", "Creating link");
 				link = GeoloqiHTTPClient.postSharingLink(this, time, message);
+				progressDialog.dismiss();
 				Intent shareIntent = new Intent(Intent.ACTION_SEND);
 				shareIntent.putExtra(Intent.EXTRA_TEXT, message + " " + link.shortLink);
 				shareIntent.setType("text/plain");
