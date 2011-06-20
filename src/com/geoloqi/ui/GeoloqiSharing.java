@@ -107,7 +107,8 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 				link = GeoloqiHTTPClient.postSharingLink(this, time, message);
 				Intent shareIntent = new Intent(Intent.ACTION_SEND);
 				shareIntent.putExtra(Intent.EXTRA_TEXT, message + " " + link.shortLink);
-				sendBroadcast(shareIntent);
+				shareIntent.setType("text/plain");
+				startActivity(Intent.createChooser(shareIntent, "Share Location"));
 			} catch (RPCException e) {
 				Util.log("Error in Geoloqi Sharing: " + e.getMessage());
 				Toast.makeText(this, "An error occurred.", Toast.LENGTH_LONG);
