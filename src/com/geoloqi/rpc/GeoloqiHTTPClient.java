@@ -139,7 +139,7 @@ public final class GeoloqiHTTPClient {
 		try {
 			send(request);
 		} catch (RPCException e) {
-			if (e.getMessage() == "expired_token") {
+			if (e.getMessage().equals("expired_token")) {
 				try {
 					refreshToken(context);
 					tryAgain = true;
@@ -181,14 +181,14 @@ public final class GeoloqiHTTPClient {
 		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
 		} catch (RPCException e) {
-			if (e.getMessage() == "expired_token") {
+			if (e.getMessage().equals("expired_token")) {
 				try {
 					refreshToken(context);
 				} catch (RPCException e1) {
 					throw new RPCException("postSharingLink could not refresh the token: excepted with: " + e1.getMessage());
 				}
 			} else {
-				throw new RuntimeException(e.getMessage());
+				throw e;
 			}
 		} finally {
 			monitorLock.release();
@@ -230,8 +230,10 @@ public final class GeoloqiHTTPClient {
 		// Attach the params as an entity
 
 		try {
-			send(request);
+			saveToken(context, new OAuthToken(send(request)));
 		} catch (RPCException e) {
+			throw new RuntimeException(e.getMessage());
+		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
 		}
 	}

@@ -3,9 +3,9 @@ package com.geoloqi.ui;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.util.Pair;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
@@ -27,7 +27,6 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 	Button shareButton;
 	Integer time;
 	String message;
-	ProgressDialog progressDialog;
 	SharingLink link;
 	Intent shareIntent = new Intent(Intent.ACTION_SEND);
 
@@ -77,6 +76,7 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 
 	// BEGIN EVENT HANDLERS
 
+	@SuppressWarnings("unchecked")
 	public void onClick(View src) {
 		if (src.getId() == R.id.buttonShare) {
 			String item = (String) shareSpinner.getSelectedItem();
@@ -109,8 +109,8 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 				time = 10;
 			}
 
-			progressDialog = ProgressDialog.show(this, "Working...", "Creating link");
-			new Thread(new MakeLink()).run();
+			new MakeLink().execute(new Pair<Integer, String>(time, message));
+
 		}
 
 	}
@@ -134,30 +134,37 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 		shareSpinner.setAdapter(adapter);
 	}
 
-	private final Handler handler = new Handler() {
+	private class MakeLink extends AsyncTask<Pair<Integer, String>, Void, SharingLink> {
+
+		ProgressDialog progressDialog;
+
 		@Override
-		public void handleMessage(Message msg) {
-			progressDialog.dismiss();
-			shareIntent.setType("text/plain");
-			shareIntent.putExtra(Intent.EXTRA_TEXT, message + " " + link.shortLink);
-			startActivity(Intent.createChooser(shareIntent, "Share Location"));
-			GeoloqiSharing.this.finish();
+		public void onPreExecute() {
+			progressDialog = ProgressDialog.show(GeoloqiSharing.this, "Working...", "Creating link");
 		}
-	};
 
-	private class MakeLink implements Runnable {
-
-		public void run() {
+		@Override
+		protected SharingLink doInBackground(Pair<Integer, String>... params) {
 
 			try {
-				link = GeoloqiHTTPClient.postSharingLink(GeoloqiSharing.this, time, message);
+				return GeoloqiHTTPClient.postSharingLink(GeoloqiSharing.this, params[0].first, params[0].second);
 			} catch (RPCException e) {
 				Util.log("Error in Geoloqi Sharing: " + e.getMessage());
-				Toast.makeText(GeoloqiSharing.this, "An error occurred.", Toast.LENGTH_LONG);
-				handler.sendEmptyMessage(1);
+				return null;
 			}
-			handler.sendEmptyMessage(0);
 		}
 
+		@Override
+		public void onPostExecute(SharingLink link) {
+			progressDialog.dismiss();
+			if (link == null) {
+				Toast.makeText(GeoloqiSharing.this, "An error occurred.", Toast.LENGTH_LONG);
+			} else {
+				shareIntent.setType("text/plain");
+				shareIntent.putExtra(Intent.EXTRA_TEXT, message + " " + link.shortLink);
+				startActivity(Intent.createChooser(shareIntent, "Share Location"));
+			}
+			GeoloqiSharing.this.finish();
+		}
 	}
 }
