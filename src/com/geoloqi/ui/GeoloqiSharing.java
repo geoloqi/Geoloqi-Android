@@ -110,7 +110,6 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 			}
 
 			new MakeLink().execute(new Pair<Integer, String>(time, message));
-
 		}
 
 	}

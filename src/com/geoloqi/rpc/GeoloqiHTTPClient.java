@@ -138,19 +138,12 @@ public final class GeoloqiHTTPClient {
 		monitorLock.acquireUninterruptibly();
 		try {
 			send(request);
+		} catch (ExpiredTokenException e) {
+			refreshToken(context);
+			tryAgain = true;
 		} catch (RPCException e) {
-			if (e.getMessage().equals("expired_token")) {
-				try {
-					refreshToken(context);
-					tryAgain = true;
-				} catch (RPCException e1) {
-					Util.log("RPCException in refreshToken, called by postLocationUpdate: " + e.getMessage());
-					return false;
-				}
-			} else {
-				Util.log("RPCException in postLocationUpdate: " + e.getMessage());
-				return false;
-			}
+			Util.log("RPCException in postLocationUpdate: " + e.getMessage());
+			return false;
 		} finally {
 			monitorLock.release();
 		}
@@ -176,20 +169,11 @@ public final class GeoloqiHTTPClient {
 
 		monitorLock.acquireUninterruptibly();
 		try {
-			JSONObject response = send(request);
-			return new SharingLink(response);
+			return new SharingLink(send(request));
 		} catch (JSONException e) {
 			throw new RuntimeException(e.getMessage());
-		} catch (RPCException e) {
-			if (e.getMessage().equals("expired_token")) {
-				try {
-					refreshToken(context);
-				} catch (RPCException e1) {
-					throw new RPCException("postSharingLink could not refresh the token: excepted with: " + e1.getMessage());
-				}
-			} else {
-				throw e;
-			}
+		} catch (ExpiredTokenException e) {
+			refreshToken(context);
 		} finally {
 			monitorLock.release();
 		}
@@ -219,11 +203,7 @@ public final class GeoloqiHTTPClient {
 		}
 	}
 
-	protected static void refreshToken(Context context) throws RPCException {
-		if (!isLoggedIn(context)) {
-			createAnonymousAccount(context);
-			return;
-		}
+	protected static void refreshToken(Context context) {
 		MyRequest request = new MyRequest(MyRequest.POST, URL_BASE + "oauth/token");
 		String refreshToken = context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).getString("refreshToken", null);
 		request = request.entityParams(pair("grant_type", "refresh_token"), pair("client_id", GeoloqiConstants.GEOLOQI_ID), pair("client_secret", GeoloqiConstants.GEOLOQI_SECRET), pair("refresh_token", refreshToken));
@@ -286,20 +266,24 @@ public final class GeoloqiHTTPClient {
 		} catch (ParseException e) {
 			Util.log("ParseException: " + e.getMessage());
 			throw new RuntimeException(e.getMessage());
-		} catch (ClientProtocolException e) {
-			Util.log("ClientProtocolException: " + e.getMessage());
-			throw new RuntimeException(e.getMessage());
 		} catch (JSONException e) {
 			Util.log("JSONException: " + e.getMessage());
 			throw new RuntimeException(e.getMessage());
+		} catch (ClientProtocolException e) {
+			Util.log("ClientProtocolException: " + e.getMessage());
+			throw new RPCException(e.getMessage());
 		} catch (IOException e) {
 			Util.log("IOException: " + e.getMessage());
-			throw new RuntimeException(e.getMessage());
+			throw new RPCException(e.getMessage());
 		}
 
 		if (response.has("error")) {
 			try {
-				throw new RPCException(response.getString("error"));
+				if (response.getString("error").equals("expired_token")) {
+					throw new ExpiredTokenException();
+				} else {
+					throw new RPCException(response.getString("error"));
+				}
 			} catch (JSONException e) {
 				throw new RuntimeException(e.getMessage());
 			}

@@ -152,9 +152,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 			if (!Util.isServiceRunning(this.getApplicationContext(), GeoloqiService.class.getName())) {
 				startService(new Intent(this, GeoloqiService.class));
 				buttonStart.setText("Stop Tracking");
+				((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
 			} else {
 				stopService(new Intent(this, GeoloqiService.class));
 				buttonStart.setText("Start Tracking");
+				((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).cancel(NOTIFICATION_ID);
 			}
 			break;
 		case R.id.buttonLayerCatalog:
