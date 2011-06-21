@@ -4,7 +4,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
@@ -18,16 +22,21 @@ import android.widget.Toast;
 
 import com.geoloqi.BatteryReceiver;
 import com.geoloqi.Util;
+import com.geoloqi.android2.R;
 import com.geoloqi.rpc.GeoloqiHTTPClient;
+import com.geoloqi.ui.Geoloqi;
 
 public class GeoloqiService extends Service implements LocationListener {
-	private static Date lastUpdate;
+	private static final int NOTIFICATION_ID = 1024;
+	private Date lastUpdate;
 	private final GeoloqiMessenger messenger = new GeoloqiMessenger();
 	private final BatteryReceiver battery = new BatteryReceiver();
 	private final LocationCollection backlog = new LocationCollection(this, "backlog");
 
 	private Intent lastCounterUpdate;
 	private Intent lastLocationUpdate;
+
+	private Notification notification;
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -43,6 +52,7 @@ public class GeoloqiService extends Service implements LocationListener {
 
 	@Override
 	public void onDestroy() {
+		((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).cancel(NOTIFICATION_ID);
 		unregisterReceiver(battery);
 		Toast.makeText(this, "Geoloqi Tracker Stopped", Toast.LENGTH_LONG).show();
 		((LocationManager) getSystemService(LOCATION_SERVICE)).removeUpdates(this);
@@ -60,6 +70,17 @@ public class GeoloqiService extends Service implements LocationListener {
 		long minTime = Util.getMinTime(this);
 		float minDistance = Util.getDistanceFilter();
 		((LocationManager) getSystemService(LOCATION_SERVICE)).requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
+
+		CharSequence tickerText = "Geoloqi tracker is running";
+		notification = new Notification(R.drawable.ic_stat_notify, tickerText, System.currentTimeMillis());
+		CharSequence contentTitle = "Geoloqi";
+		CharSequence contentText = tickerText;
+		Intent notificationIntent = new Intent(this, Geoloqi.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		notification.flags = Notification.FLAG_ONGOING_EVENT;
+		notification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);
+		((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
+
 	}
 
 	@Override
@@ -79,6 +100,15 @@ public class GeoloqiService extends Service implements LocationListener {
 			lastLocationUpdate = new Intent(Intent.ACTION_EDIT, Util.encodeLocation(location));
 			sendStickyBroadcast(lastLocationUpdate);
 			broadcastUnsentPointCount();
+
+			notification.flags = Notification.FLAG_ONGOING_EVENT;
+			CharSequence contentTitle = "Geoloqi";
+			CharSequence contentText = "speed: " + location.getSpeed() + "km/h, " + (backlog.size() + messenger.queue.size()) + " points";
+			Intent notificationIntent = new Intent(this, GeoloqiService.class);
+			PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+			notification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);// FIXME This is deprecated.
+			((NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
+
 			if (shouldSend()) {
 				messenger.rezendezvous.release();
 			}

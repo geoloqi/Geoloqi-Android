@@ -7,9 +7,6 @@ import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -44,12 +41,11 @@ public class Geoloqi extends Activity implements OnClickListener {
 	public static final String TAG = "Geoloqi";
 	private static final int LOGIN_DIALOG_ID = 1;
 	private static final int SIGNUP_DIALOG_ID = 2;
-	private static final int NOTIFICATION_ID = 1024;
 
 	// GUI Elements
 	private Button buttonStart, buttonSignup, buttonLayerCatalog, buttonShare;
 	private TextView latLabel, lngLabel, altLabel, spdLabel, accLabel, numPointsLabel, accountLabel;
-	private Notification notification;
+
 	// End GUI Elements
 
 	private BroadcastReceiver locationUpdateReceiver, messengerUpdateReceiver;
@@ -69,6 +65,15 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		ImageView image = (ImageView) findViewById(R.id.geoloqiLogo);
 		image.setImageResource(R.drawable.geoloqi_300x100);
+
+		if (!Util.isServiceRunning(this, GeoloqiService.class.getName())) {
+			ComponentName response = startService(new Intent(this, GeoloqiService.class));
+			if (response == null) {
+				Util.log("Geoloqi could not start GeoloqiService");
+				throw new RuntimeException("Geoloqi could not start GeoloqiService");
+			}
+		} else {
+		}
 	}
 
 	@Override
@@ -100,6 +105,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 	@Override
 	public void onStop() {
 		unregisterReceiver(locationUpdateReceiver);
+		unregisterReceiver(messengerUpdateReceiver);
 		super.onStop();
 	}
 
@@ -110,8 +116,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 	@Override
 	public void onDestroy() {
-		NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		notificationManager.cancel(NOTIFICATION_ID);
 		super.onDestroy();
 	}
 
@@ -152,11 +156,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 			if (!Util.isServiceRunning(this.getApplicationContext(), GeoloqiService.class.getName())) {
 				startService(new Intent(this, GeoloqiService.class));
 				buttonStart.setText("Stop Tracking");
-				((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
 			} else {
 				stopService(new Intent(this, GeoloqiService.class));
 				buttonStart.setText("Start Tracking");
-				((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).cancel(NOTIFICATION_ID);
 			}
 			break;
 		case R.id.buttonLayerCatalog:
@@ -208,30 +210,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 		buttonSignup.setOnClickListener(this);
 		buttonLayerCatalog.setOnClickListener(this);
 		buttonShare.setOnClickListener(this);
-
-		// Initialize the notification.
-		CharSequence tickerText;
-		if (!Util.isServiceRunning(this, GeoloqiService.class.getName())) {
-			ComponentName response = startService(new Intent(this, GeoloqiService.class));
-			if (response == null) {
-				Util.log("Geoloqi could not start GeoloqiService");
-				throw new RuntimeException("Geoloqi could not start GeoloqiService");
-			}
-			buttonStart.setText("Stop Tracking");
-			tickerText = "Geoloqi tracker is running";
-		} else {
-			buttonStart.setText("Start Tracking");
-			tickerText = "Welcome to Geoloqi";
-		}
-
-		notification = new Notification(R.drawable.ic_stat_notify, tickerText, System.currentTimeMillis());
-		CharSequence contentTitle = "Geoloqi";
-		CharSequence contentText = tickerText;
-		Intent notificationIntent = new Intent(Geoloqi.this, Geoloqi.class);
-		PendingIntent contentIntent = PendingIntent.getActivity(Geoloqi.this, 0, notificationIntent, 0);
-		notification.flags = Notification.FLAG_ONGOING_EVENT;
-		notification.setLatestEventInfo(Geoloqi.this, contentTitle, contentText, contentIntent);
-		((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
 	}
 
 	private AlertDialog buildLoginDialog() {
@@ -318,32 +296,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 		return builder.create();
 	}
 
-	// END GUI BUILDERS
-
-	//	private class LogIn extends AsyncTask<Void, Void, String> {
-	//
-	//		@Override
-	//		protected String doInBackground(Void... v) {
-	//			return GeoloqiHTTPClient.getUsername(Geoloqi.this);//FIXME
-	//		}
-	//
-	//		// Runs with the return value of doInBackground, has access to the UI thread
-	//		@Override
-	//		protected void onPostExecute(String username) {
-	//			Util.log("Logged in as " + username);
-	//			accountLabel.setText(username);
-	//			if (username == "(anonymous)") {
-	//				buttonShare.setVisibility(View.GONE);
-	//				buttonLayerCatalog.setVisibility(View.GONE);
-	//				buttonSignup.setVisibility(View.VISIBLE);
-	//			} else {
-	//				buttonShare.setVisibility(View.VISIBLE);
-	//				buttonLayerCatalog.setVisibility(View.VISIBLE);
-	//				buttonSignup.setVisibility(View.GONE);
-	//			}
-	//		}
-	//	}
-
 	private class UIUpdateReceiver extends GeoloqiReceiver {
 
 		UIUpdateReceiver() {
@@ -380,6 +332,12 @@ public class Geoloqi extends Activity implements OnClickListener {
 		public void run() {
 			// Util.log("Updating UI!");
 
+			if (Util.isServiceRunning(Geoloqi.this, GeoloqiService.class.getName())) {
+				buttonStart.setText("Stop Tracking");
+			} else {
+				buttonStart.setText("Start Tracking");
+			}
+
 			if (location != null) {
 				latLabel.setText((new DecimalFormat("0.00000").format(location.getLatitude())));
 				lngLabel.setText((new DecimalFormat("0.00000").format(location.getLongitude())));
@@ -393,13 +351,6 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 			if (unsentPointCount != null) {
 				numPointsLabel.setText("" + unsentPointCount);
-				CharSequence contentTitle = "Geoloqi";
-				CharSequence contentText = "speed: " + spdLabel.getText() + ", " + unsentPointCount + " points";
-				Intent notificationIntent = new Intent(Geoloqi.this, Geoloqi.class);
-				PendingIntent contentIntent = PendingIntent.getActivity(Geoloqi.this, 0, notificationIntent, 0);
-				notification.flags = Notification.FLAG_ONGOING_EVENT;
-				notification.setLatestEventInfo(Geoloqi.this, contentTitle, contentText, contentIntent);// FIXME This is deprecated.
-				((NotificationManager) Geoloqi.this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
 				// lastUnsentPointCountDebug = unsentPointCount;
 			}
 			// boolean loggedIn = username != null || username != "(anonymous)";
