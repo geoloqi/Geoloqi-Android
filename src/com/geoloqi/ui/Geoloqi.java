@@ -141,6 +141,10 @@ public class Geoloqi extends Activity implements OnClickListener {
 		case R.id.login:
 			this.showDialog(LOGIN_DIALOG_ID);
 			return true;
+		case R.id.share:
+		    Intent share = new Intent(this, GeoloqiSharing.class);
+		    startActivity(share);
+		    return true;
 		case R.id.quit:
 			stopService(new Intent(this, GeoloqiService.class));
 			System.exit(0);
