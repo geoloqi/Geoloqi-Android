@@ -81,33 +81,38 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 		if (src.getId() == R.id.buttonShare) {
 			String item = (String) shareSpinner.getSelectedItem();
 			message = shareMessage.getText().toString();
+			
 			Util.log("Message is: " + message);
 			Util.log("Selection is: " + item);
-			if (item == "no time limit") {
+
+			// TODO: This is bad! Let's refactor this to not do string matching.
+			if (item.equals("no time limit")) {
 				time = null;
-			} else if (item == "10 minutes") {
+			} else if (item.equals("10 minutes")) {
 				time = 10;
-			} else if (item == "20 minutes") {
+			} else if (item.equals("20 minutes")) {
 				time = 20;
-			} else if (item == "30 minutes") {
+			} else if (item.equals("30 minutes")) {
 				time = 30;
-			} else if (item == "1 hour") {
+			} else if (item.equals("1 hour")) {
 				time = 60;
-			} else if (item == "2 hours") {
+			} else if (item.equals("2 hours")) {
 				time = 120;
-			} else if (item == "4 hours") {
+			} else if (item.equals("4 hours")) {
 				time = 240;
-			} else if (item == "8 hours") {
+			} else if (item.equals("8 hours")) {
 				time = 480;
-			} else if (item == "24 hours") {
+			} else if (item.equals("24 hours")) {
 				time = 3600;
-			} else if (item == "4 days") {
+			} else if (item.equals("4 days")) {
 				time = 14400;
-			} else if (item == "7 days") {
+			} else if (item.equals("7 days")) {
 				time = 25200;
 			} else {
 				time = 10;
 			}
+			
+			Util.log("Sharing time is: "+time);
 
 			new MakeLink().execute(new Pair<Integer, String>(time, message));
 		}
@@ -129,7 +134,10 @@ public class GeoloqiSharing extends Activity implements OnClickListener {
 
 		shareButton.setOnClickListener(this);
 
-		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.entryvalues_sharing_time_limit, android.R.layout.simple_spinner_item);
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.entryvalues_sharing_time_limit,
+		        android.R.layout.simple_spinner_item);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		
 		shareSpinner.setAdapter(adapter);
 	}
 
