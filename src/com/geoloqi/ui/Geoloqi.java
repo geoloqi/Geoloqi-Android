@@ -1,6 +1,7 @@
 package com.geoloqi.ui;
 
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -335,6 +336,9 @@ public class Geoloqi extends Activity implements OnClickListener {
 
 		public void run() {
 			// Util.log("Updating UI!");
+		    NumberFormat nf = DecimalFormat.getInstance();
+		    nf.setMaximumFractionDigits(1);
+		    nf.setMinimumFractionDigits(1);
 
 			if (Util.isServiceRunning(Geoloqi.this, GeoloqiService.class.getName())) {
 				buttonStart.setText("Stop Tracking");
@@ -345,7 +349,7 @@ public class Geoloqi extends Activity implements OnClickListener {
 			if (location != null) {
 				latLabel.setText((new DecimalFormat("0.00000").format(location.getLatitude())));
 				lngLabel.setText((new DecimalFormat("0.00000").format(location.getLongitude())));
-				altLabel.setText(location.getAltitude() + "m");
+				altLabel.setText(nf.format(location.getAltitude()) + "m");
 				spdLabel.setText(location.getSpeed() + " km/h");
 				accLabel.setText(location.getAccuracy() + "m");
 				lastLocation = location;
