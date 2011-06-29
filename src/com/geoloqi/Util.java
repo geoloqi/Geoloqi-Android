@@ -50,7 +50,7 @@ public abstract class Util {
 	public static int getRateLimit(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 		String rateLimit = p.getString(GeoloqiPreferences.PREF_RATELIMIT_KEY, "120");
-		return Integer.parseInt(rateLimit);
+		return Integer.parseInt(rateLimit) * 1000;
 	}
 
 	//	public static OAuthToken getToken(Context context) {

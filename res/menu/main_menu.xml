@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/settings"
-          android:title="Settings" />
+          android:title="Settings"
+          android:icon="@android:drawable/ic_menu_preferences" />
     <item android:id="@+id/login"
-          android:title="Account" />
-          <item android:id="@+id/share" 
-          android:title="Share" />
+          android:title="Account"
+          android:icon="@android:drawable/ic_menu_manage" />
+    <item android:id="@+id/share" 
+          android:title="Share"
+          android:icon="@android:drawable/ic_menu_share" />
     <item android:id="@+id/quit"
-          android:title="@string/quit" />
+          android:title="@string/quit"
+          android:icon="@android:drawable/ic_menu_close_clear_cancel" />
 </menu>
