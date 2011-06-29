@@ -104,7 +104,8 @@ public class GeoloqiService extends Service implements LocationListener {
 			notification.flags = Notification.FLAG_ONGOING_EVENT;
 			CharSequence contentTitle = "Geoloqi";
 			CharSequence contentText = "speed: " + location.getSpeed() + "km/h, " + (backlog.size() + messenger.queue.size()) + " points";
-			Intent notificationIntent = new Intent(this, GeoloqiService.class);
+			Intent notificationIntent = new Intent(this, Geoloqi.class);
+			
 			PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 			notification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);// FIXME This is deprecated.
 			((NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
