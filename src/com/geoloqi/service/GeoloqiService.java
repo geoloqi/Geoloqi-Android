@@ -91,42 +91,56 @@ public class GeoloqiService extends Service implements LocationListener {
 
 	@SuppressWarnings("unchecked")
 	public void onLocationChanged(Location location) {
-		if (shouldUpdate(location)) {
-			lastUpdate = new Date();
-			if (lastLocationUpdate != null) {
-				removeStickyBroadcast(lastLocationUpdate);
-			}
-			backlog.insertLocation(location, new Pair<String, String>("Battery", "" + battery.getBatteryLevel()));
-			lastLocationUpdate = new Intent(Intent.ACTION_EDIT, Util.encodeLocation(location));
-			sendStickyBroadcast(lastLocationUpdate);
-			broadcastUnsentPointCount();
-
-			notification.flags = Notification.FLAG_ONGOING_EVENT;
-			CharSequence contentTitle = "Geoloqi";
-			CharSequence contentText = "speed: " + location.getSpeed() + "km/h, " + (backlog.size() + messenger.queue.size()) + " points";
-			Intent notificationIntent = new Intent(this, GeoloqiService.class);
-			PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-			notification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);// FIXME This is deprecated.
-			((NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
-
-			if (shouldSend()) {
-				messenger.rezendezvous.release();
-			}
-		}
+	    // If location is accurate, append to location backlog
+	    if (isAccurate(location)) {
+    		if (lastLocationUpdate != null) {
+    			removeStickyBroadcast(lastLocationUpdate);
+    		}
+    		backlog.insertLocation(location, new Pair<String, String>("Battery", "" + battery.getBatteryLevel()));
+    		lastLocationUpdate = new Intent(Intent.ACTION_EDIT, Util.encodeLocation(location));
+    		sendStickyBroadcast(lastLocationUpdate);
+    		broadcastUnsentPointCount();
+    
+    		notification.flags = Notification.FLAG_ONGOING_EVENT;
+    		CharSequence contentTitle = "Geoloqi";
+    		CharSequence contentText = "speed: " + location.getSpeed() + "km/h, " + (backlog.size() + messenger.queue.size()) + " points";
+    		Intent notificationIntent = new Intent(this, Geoloqi.class);
+    		
+    		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+    		notification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);// FIXME This is deprecated.
+    		((NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
+    
+    		if (shouldUpdate(location) && shouldSend()) {
+    			messenger.rezendezvous.release();
+                lastUpdate = new Date();
+    		}
+	    }
+	}
+	
+	private boolean isAccurate(Location location) {
+	    return !location.hasAccuracy() || location.getAccuracy() < 600;
 	}
 
 	private boolean shouldUpdate(Location location) {
-		boolean haveNotUpdated, timeElapsed, isAccurate;
-		haveNotUpdated = lastUpdate == null;
-		if (haveNotUpdated)
-			return true;
-		timeElapsed = lastUpdate.getTime() < System.currentTimeMillis() - Util.getMinTime(this);
-		isAccurate = !location.hasAccuracy() || location.getAccuracy() < 600;
-		return timeElapsed && isAccurate;
+	    boolean update = false;
+	    
+	    if (lastUpdate == null) {
+	        update = true;
+	    } else {
+	        update = lastUpdate.getTime() < (System.currentTimeMillis() - Util.getRateLimit(this));
+	    }
+	    
+	    Util.log("Should Update: "+update);
+		return update;
 	}
 
 	private boolean shouldSend() {
-		return messenger.rezendezvous.availablePermits() == 0;
+	    boolean send = false;
+	    
+        send = messenger.rezendezvous.availablePermits() == 0;
+	    
+        Util.log("Should Send: "+send);
+	    return send;
 	}
 
 	private void broadcastUnsentPointCount() {
