@@ -29,6 +29,7 @@ import com.geoloqi.ui.Geoloqi;
 public class GeoloqiService extends Service implements LocationListener {
 	private static final int NOTIFICATION_ID = 1024;
 	private Date lastUpdate;
+	private Date lastSend;
 	private final GeoloqiMessenger messenger = new GeoloqiMessenger();
 	private final BatteryReceiver battery = new BatteryReceiver();
 	private final LocationCollection backlog = new LocationCollection(this, "backlog");
@@ -92,7 +93,7 @@ public class GeoloqiService extends Service implements LocationListener {
 	@SuppressWarnings("unchecked")
 	public void onLocationChanged(Location location) {
 	    // If location is accurate, append to location backlog
-	    if (isAccurate(location)) {
+	    if (shouldUpdate(location)) {
     		if (lastLocationUpdate != null) {
     			removeStickyBroadcast(lastLocationUpdate);
     		}
@@ -110,9 +111,11 @@ public class GeoloqiService extends Service implements LocationListener {
     		notification.setLatestEventInfo(this, contentTitle, contentText, contentIntent);// FIXME This is deprecated.
     		((NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
     
-    		if (shouldUpdate(location) && shouldSend()) {
+            lastUpdate = new Date();
+
+            if (shouldSend()) {
     			messenger.rezendezvous.release();
-                lastUpdate = new Date();
+    			lastSend = new Date();
     		}
 	    }
 	}
@@ -122,23 +125,33 @@ public class GeoloqiService extends Service implements LocationListener {
 	}
 
 	private boolean shouldUpdate(Location location) {
-	    boolean update = false;
-	    
-	    if (lastUpdate == null) {
-	        update = true;
-	    } else {
-	        update = lastUpdate.getTime() < (System.currentTimeMillis() - Util.getRateLimit(this));
-	    }
-	    
-	    Util.log("Should Update: "+update);
-		return update;
+		boolean haveNotUpdated, timeElapsed, isAccurate;
+		haveNotUpdated = lastUpdate == null;
+		if (haveNotUpdated)
+			return true;
+		timeElapsed = lastUpdate.getTime() < System.currentTimeMillis() - Util.getMinTime(this);
+		isAccurate = !location.hasAccuracy() || location.getAccuracy() < 600;
+		return timeElapsed && isAccurate;
 	}
-
+	
 	private boolean shouldSend() {
+	    boolean okToSend = false;
 	    boolean send = false;
+	    boolean timeElapsed;
 	    
-        send = messenger.rezendezvous.availablePermits() == 0;
-	    
+	    okToSend = messenger.rezendezvous.availablePermits() == 0;
+
+        if(okToSend) {
+        	if(lastSend == null) {
+        		send = true;
+        	} else {
+	    		timeElapsed = lastSend.getTime() < System.currentTimeMillis() - Util.getRateLimit(this);
+	        	if(timeElapsed) {
+	        		send = true;
+	        	}
+        	}
+        }
+        
         Util.log("Should Send: "+send);
 	    return send;
 	}

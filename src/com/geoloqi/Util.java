@@ -17,7 +17,7 @@ public abstract class Util {
 
 	private static float DISTANCE_FILTER = 0.0f;
 	private static long TRACKING_LIMIT = 1000l;
-	private static String VERSION = "11.132";
+	private static String VERSION = "11.185";
 
 	public static Uri encodeLocation(Location l) {
 		String path = "/" + l.getLatitude() + "/" + l.getLongitude() + "/" + l.getAltitude() + "/" + l.getBearing() + "/" + l.getSpeed() + "/" + l.getTime() + "/" + l.getAccuracy() + "/";
