@@ -28,8 +28,10 @@ import com.geoloqi.ui.Geoloqi;
 
 public class GeoloqiService extends Service implements LocationListener {
 	private static final int NOTIFICATION_ID = 1024;
+	private Location lastPoint;
 	private Date lastUpdate;
 	private Date lastSend;
+	private int duplicateThresholdSeconds = 30;
 	private final GeoloqiMessenger messenger = new GeoloqiMessenger();
 	private final BatteryReceiver battery = new BatteryReceiver();
 	private final LocationCollection backlog = new LocationCollection(this, "backlog");
@@ -112,6 +114,7 @@ public class GeoloqiService extends Service implements LocationListener {
     		((NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
     
             lastUpdate = new Date();
+            lastPoint = location;
 
             if (shouldSend()) {
     			messenger.rezendezvous.release();
@@ -125,13 +128,29 @@ public class GeoloqiService extends Service implements LocationListener {
 	}
 
 	private boolean shouldUpdate(Location location) {
-		boolean haveNotUpdated, timeElapsed, isAccurate;
-		haveNotUpdated = lastUpdate == null;
-		if (haveNotUpdated)
+		boolean isAccurate;
+		long elapsedMillis;
+
+		// If the last update was null, use the current point
+		if (lastUpdate == null)
 			return true;
-		timeElapsed = lastUpdate.getTime() < System.currentTimeMillis() - Util.getMinTime(this);
+
+		elapsedMillis = System.currentTimeMillis() - lastUpdate.getTime();
+		
+		// If not enough time has elapsed since the last point received, don't use this point
+		if(elapsedMillis < Util.getMinTime(this))
+			return false;
+
+		// If the point is exactly the same as the previous one, and less than n seconds has elapsed, ignore it
+		if(location.getLatitude() == lastPoint.getLatitude() && elapsedMillis < this.duplicateThresholdSeconds*1000)
+			return false;
+		
+		// If the point is not accurate enough, don't use it
 		isAccurate = !location.hasAccuracy() || location.getAccuracy() < 600;
-		return timeElapsed && isAccurate;
+		if(!isAccurate)
+			return false;
+		
+		return true;
 	}
 	
 	private boolean shouldSend() {
